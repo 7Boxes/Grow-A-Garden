@@ -36,9 +36,25 @@ function BuyFunction.execute(remoteType, itemName)
     return true
 end
 
-function BuyFunction.batchExecute(remoteType, itemList)
-    for _, itemName in ipairs(itemList) do
-        BuyFunction.execute(remoteType, itemName)
+function BuyFunction.startContinuousPurchase(config)
+    local runService = game:GetService("RunService")
+    local connection
+    local purchaseOrder = {"GearStock", "SeedStock", "CosmeticCrate", "EventStock", "CosmeticItem"}
+    
+    connection = runService.Heartbeat:Connect(function()
+        for _, remoteType in ipairs(purchaseOrder) do
+            local items = config[remoteType] or {}
+            for _, itemName in ipairs(items) do
+                BuyFunction.execute(remoteType, itemName)
+                task.wait(0.5) -- Wait half second between purchases
+            end
+        end
+    end)
+    
+    return function() -- Return disconnect function
+        if connection then
+            connection:Disconnect()
+        end
     end
 end
 
