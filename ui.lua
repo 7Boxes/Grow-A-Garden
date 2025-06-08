@@ -1,25 +1,52 @@
--- Wait for the game to fully load
+local ASSETS = {
+    SHADOW_IMAGE = "rbxassetid://1316045217",
+    COIN_ICON = "rbxassetid://7072716622",
+    REMOTE_PATHS = {
+        BuyPetEgg = {"GameEvents", "BuyPetEgg"},
+        BuyGearStock = {"GameEvents", "BuyGearStock"},
+        BuySeedStock = {"GameEvents", "BuySeedStock"},
+        BuyCosmeticCrate = {"GameEvents", "BuyCosmeticCrate"},
+        BuyEventShopStock = {"GameEvents", "BuyEventShopStock"},
+        BuyCosmeticItem = {"GameEvents", "BuyCosmeticItem"}
+    },
+    SHOP_PATHS = {
+        Seed = {"PlayerGui", "Seed_Shop", "Frame", "ScrollingFrame"},
+        Gear = {"PlayerGui", "Gear_Shop", "Frame", "ScrollingFrame"},
+        Event = {"PlayerGui", "HoneyEventShop_UI", "Frame", "ScrollingFrame"},
+        CosmeticItem = {"ReplicatedStorage", "Data", "CosmeticItemShopData"},
+        CosmeticCrate = {"ReplicatedStorage", "Data", "CosmeticCrateShopData"}
+    }
+}
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Create the main UI elements
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ShecklesLogger"
 screenGui.Parent = playerGui
 
+local mainScrollingFrame = Instance.new("ScrollingFrame")
+mainScrollingFrame.Name = "MainScroller"
+mainScrollingFrame.Size = UDim2.new(0, 340, 0, 500)
+mainScrollingFrame.Position = UDim2.new(0.5, -170, 0.5, -250)
+mainScrollingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainScrollingFrame.BackgroundTransparency = 1
+mainScrollingFrame.ScrollBarThickness = 6
+mainScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 800)
+mainScrollingFrame.Parent = screenGui
+
 local frame = Instance.new("Frame")
 frame.Name = "MainFrame"
-frame.Size = UDim2.new(0, 350, 0, 500) -- Increased height for all controls
-frame.Position = UDim2.new(0.5, -175, 0.1, 0)
+frame.Size = UDim2.new(1, -10, 0, 800)
+frame.Position = UDim2.new(0.5, 0, 0, 5)
 frame.AnchorPoint = Vector2.new(0.5, 0)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 frame.BackgroundTransparency = 0.15
 frame.BorderSizePixel = 0
-frame.Parent = screenGui
+frame.Parent = mainScrollingFrame
 
--- Add a subtle gradient
 local gradient = Instance.new("UIGradient")
 gradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 45)),
@@ -28,15 +55,13 @@ gradient.Color = ColorSequence.new({
 gradient.Rotation = 90
 gradient.Parent = frame
 
--- Add a nice corner
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 8)
 corner.Parent = frame
 
--- Add subtle drop shadow
 local shadow = Instance.new("ImageLabel")
 shadow.Name = "Shadow"
-shadow.Image = "rbxassetid://1316045217"
+shadow.Image = ASSETS.SHADOW_IMAGE
 shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
 shadow.ImageTransparency = 0.8
 shadow.ScaleType = Enum.ScaleType.Slice
@@ -47,7 +72,6 @@ shadow.BackgroundTransparency = 1
 shadow.Parent = frame
 shadow.ZIndex = -1
 
--- Add a title bar
 local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
 titleBar.Size = UDim2.new(1, 0, 0, 32)
@@ -60,10 +84,9 @@ local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 8)
 titleCorner.Parent = titleBar
 
--- Add title text
 local title = Instance.new("TextLabel")
 title.Name = "Title"
-title.Text = "JMXHub - GAG"
+title.Text = "SHECKLES TRACKER"
 title.Size = UDim2.new(1, -20, 1, 0)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
@@ -73,7 +96,6 @@ title.TextSize = 14
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = titleBar
 
--- Add username display
 local username = player.Name
 local hiddenUsername = string.rep("*", #username - 3) .. string.sub(username, -3)
 
@@ -89,7 +111,6 @@ userLabel.TextSize = 12
 userLabel.TextXAlignment = Enum.TextXAlignment.Right
 userLabel.Parent = titleBar
 
--- Add divider with gradient
 local divider = Instance.new("Frame")
 divider.Name = "Divider"
 divider.Size = UDim2.new(1, -20, 0, 1)
@@ -107,15 +128,13 @@ dividerGradient.Color = ColorSequence.new({
 dividerGradient.Rotation = 0
 dividerGradient.Parent = divider
 
--- Main content area
 local contentFrame = Instance.new("Frame")
 contentFrame.Name = "ContentFrame"
-contentFrame.Size = UDim2.new(1, -20, 0, 120) -- For stats only
+contentFrame.Size = UDim2.new(1, -20, 1, -110)
 contentFrame.Position = UDim2.new(0, 10, 0, 40)
 contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = frame
 
--- Sheckles display with icon
 local shecklesContainer = Instance.new("Frame")
 shecklesContainer.Name = "ShecklesContainer"
 shecklesContainer.Size = UDim2.new(1, 0, 0, 40)
@@ -128,7 +147,7 @@ shecklesIcon.Name = "Icon"
 shecklesIcon.Size = UDim2.new(0, 24, 0, 24)
 shecklesIcon.Position = UDim2.new(0, 0, 0.5, -12)
 shecklesIcon.BackgroundTransparency = 1
-shecklesIcon.Image = "rbxassetid://7072716622" -- Coin icon
+shecklesIcon.Image = ASSETS.COIN_ICON
 shecklesIcon.Parent = shecklesContainer
 
 local shecklesLabel = Instance.new("TextLabel")
@@ -143,7 +162,6 @@ shecklesLabel.TextSize = 24
 shecklesLabel.TextXAlignment = Enum.TextXAlignment.Left
 shecklesLabel.Parent = shecklesContainer
 
--- Time display with progress bar
 local timeContainer = Instance.new("Frame")
 timeContainer.Name = "TimeContainer"
 timeContainer.Size = UDim2.new(1, 0, 0, 60)
@@ -175,7 +193,6 @@ timeLabel.TextSize = 20
 timeLabel.TextXAlignment = Enum.TextXAlignment.Left
 timeLabel.Parent = timeContainer
 
--- Progress bar
 local progressBar = Instance.new("Frame")
 progressBar.Name = "ProgressBar"
 progressBar.Size = UDim2.new(1, 0, 0, 6)
@@ -199,245 +216,257 @@ local progressFillCorner = Instance.new("UICorner")
 progressFillCorner.CornerRadius = UDim.new(1, 0)
 progressFillCorner.Parent = progressFill
 
--- Purchase configuration section
-local purchaseConfigFrame = Instance.new("Frame")
-purchaseConfigFrame.Name = "PurchaseConfig"
-purchaseConfigFrame.Size = UDim2.new(1, -20, 0, 320)
-purchaseConfigFrame.Position = UDim2.new(0, 10, 0, 170)
-purchaseConfigFrame.BackgroundTransparency = 1
-purchaseConfigFrame.Parent = frame
+local buttonContainer = Instance.new("Frame")
+buttonContainer.Name = "ButtonContainer"
+buttonContainer.Size = UDim2.new(1, -20, 0, 40)
+buttonContainer.Position = UDim2.new(0, 10, 1, -50)
+buttonContainer.BackgroundTransparency = 1
+buttonContainer.Parent = frame
 
-local purchaseTitle = Instance.new("TextLabel")
-purchaseTitle.Name = "PurchaseTitle"
-purchaseTitle.Text = "AUTO-PURCHASE CONFIGURATION"
-purchaseTitle.Size = UDim2.new(1, 0, 0, 20)
-purchaseTitle.Position = UDim2.new(0, 0, 0, 0)
-purchaseTitle.BackgroundTransparency = 1
-purchaseTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
-purchaseTitle.Font = Enum.Font.GothamMedium
-purchaseTitle.TextSize = 14
-purchaseTitle.TextXAlignment = Enum.TextXAlignment.Left
-purchaseTitle.Parent = purchaseConfigFrame
+local buyEggsButton = Instance.new("TextButton")
+buyEggsButton.Name = "BuyEggsButton"
+buyEggsButton.Size = UDim2.new(0.5, -5, 1, 0)
+buyEggsButton.Position = UDim2.new(0, 0, 0, 0)
+buyEggsButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+buyEggsButton.AutoButtonColor = false
+buyEggsButton.Text = "BUY ALL EGGS: OFF"
+buyEggsButton.Font = Enum.Font.GothamBold
+buyEggsButton.TextSize = 14
+buyEggsButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+buyEggsButton.Parent = buttonContainer
 
--- Purchase control function
-local function createPurchaseControl(category, yPosition, exampleText)
-    local container = Instance.new("Frame")
-    container.Name = category .. "Container"
-    container.Size = UDim2.new(1, 0, 0, 60)
-    container.Position = UDim2.new(0, 0, 0, yPosition)
-    container.BackgroundTransparency = 1
-    container.Parent = purchaseConfigFrame
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 6)
+buttonCorner.Parent = buyEggsButton
 
-    -- Toggle button
-    local toggleButton = Instance.new("TextButton")
-    toggleButton.Name = category .. "Toggle"
-    toggleButton.Size = UDim2.new(0, 120, 0, 25)
-    toggleButton.Position = UDim2.new(0, 0, 0, 0)
-    toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    toggleButton.AutoButtonColor = false
-    toggleButton.Text = category .. ": OFF"
-    toggleButton.Font = Enum.Font.GothamBold
-    toggleButton.TextSize = 12
-    toggleButton.TextColor3 = Color3.fromRGB(255, 100, 100)
-    toggleButton.Parent = container
+local buttonIndicator = Instance.new("Frame")
+buttonIndicator.Name = "Indicator"
+buttonIndicator.Size = UDim2.new(1, 0, 0, 3)
+buttonIndicator.Position = UDim2.new(0, 0, 1, -3)
+buttonIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+buttonIndicator.BorderSizePixel = 0
+buttonIndicator.Parent = buyEggsButton
 
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 4)
-    buttonCorner.Parent = toggleButton
+local indicatorCorner = Instance.new("UICorner")
+indicatorCorner.CornerRadius = UDim.new(0, 2)
+indicatorCorner.Parent = buttonIndicator
 
-    -- Button state indicator
-    local buttonIndicator = Instance.new("Frame")
-    buttonIndicator.Name = "Indicator"
-    buttonIndicator.Size = UDim2.new(1, 0, 0, 2)
-    buttonIndicator.Position = UDim2.new(0, 0, 1, -2)
-    buttonIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    buttonIndicator.BorderSizePixel = 0
-    buttonIndicator.Parent = toggleButton
-
-    local indicatorCorner = Instance.new("UICorner")
-    indicatorCorner.CornerRadius = UDim.new(0, 1)
-    indicatorCorner.Parent = buttonIndicator
-
-    -- Text box label
-    local textBoxLabel = Instance.new("TextLabel")
-    textBoxLabel.Name = category .. "Label"
-    textBoxLabel.Text = category .. " Items (comma separated):"
-    textBoxLabel.Size = UDim2.new(1, 0, 0, 15)
-    textBoxLabel.Position = UDim2.new(0, 0, 0, 30)
-    textBoxLabel.BackgroundTransparency = 1
-    textBoxLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-    textBoxLabel.Font = Enum.Font.Gotham
-    textBoxLabel.TextSize = 12
-    textBoxLabel.TextXAlignment = Enum.TextXAlignment.Left
-    textBoxLabel.Parent = container
-
-    -- Example text
-    local exampleLabel = Instance.new("TextLabel")
-    exampleLabel.Name = category .. "Example"
-    exampleLabel.Text = "Example: " .. exampleText
-    exampleLabel.Size = UDim2.new(1, 0, 0, 12)
-    exampleLabel.Position = UDim2.new(0, 0, 0, 45)
-    exampleLabel.BackgroundTransparency = 1
-    exampleLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
-    exampleLabel.Font = Enum.Font.Gotham
-    exampleLabel.TextSize = 10
-    exampleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    exampleLabel.Parent = container
-
-    -- Text box
-    local textBox = Instance.new("TextBox")
-    textBox.Name = category .. "TextBox"
-    textBox.Size = UDim2.new(1, 0, 0, 20)
-    textBox.Position = UDim2.new(0, 0, 0, 25)
-    textBox.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-    textBox.TextColor3 = Color3.fromRGB(220, 220, 220)
-    textBox.Font = Enum.Font.Gotham
-    textBox.TextSize = 12
-    textBox.TextXAlignment = Enum.TextXAlignment.Left
-    textBox.PlaceholderText = "Enter items separated by commas"
-    textBox.Text = ""
-    textBox.Parent = container
-
-    local textBoxCorner = Instance.new("UICorner")
-    textBoxCorner.CornerRadius = UDim.new(0, 4)
-    textBoxCorner.Parent = textBox
-
-    local textBoxPadding = Instance.new("UIPadding")
-    textBoxPadding.PaddingLeft = UDim.new(0, 5)
-    textBoxPadding.Parent = textBox
-
-    return {
-        toggle = toggleButton,
-        textBox = textBox,
-        indicator = buttonIndicator
-    }
-end
-
--- Create controls for each category
-local purchaseControls = {
-    GearStock = createPurchaseControl("GearStock", 30, "Recall Wrench, Lightning Rod"),
-    SeedStock = createPurchaseControl("SeedStock", 100, "Carrot, Strawberry"),
-    CosmeticCrate = createPurchaseControl("CosmeticCrate", 170, "Common Gnome Crate, Rare Gnome Crate"),
-    EventStock = createPurchaseControl("EventStock", 240, "Flower Seed Pack, Bee Egg"),
-    CosmeticItem = createPurchaseControl("CosmeticItem", 310, "Red Pottery, Orange Umbrella")
-}
-
--- Status label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
-statusLabel.Size = UDim2.new(1, -20, 0, 20)
-statusLabel.Position = UDim2.new(0, 10, 0, 500)
+statusLabel.Size = UDim2.new(0.5, -5, 1, 0)
+statusLabel.Position = UDim2.new(0.5, 5, 0, 0)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = "Status: Idle"
 statusLabel.Font = Enum.Font.Gotham
 statusLabel.TextSize = 12
 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Parent = frame
+statusLabel.Parent = buttonContainer
 
--- Purchase function library
-local BuyFunction = {}
-
-local REMOTE_MAPPINGS = {
-    GearStock = {
-        RemotePath = {"GameEvents", "BuyGearStock"},
-        ArgsTemplate = function(item) return {item} end
-    },
-    SeedStock = {
-        RemotePath = {"GameEvents", "BuySeedStock"},
-        ArgsTemplate = function(item) return {item} end
-    },
-    CosmeticCrate = {
-        RemotePath = {"GameEvents", "BuyCosmeticCrate"},
-        ArgsTemplate = function(item) return {item} end
-    },
-    EventStock = {
-        RemotePath = {"GameEvents", "BuyEventShopStock"},
-        ArgsTemplate = function(item) return {item} end
-    },
-    CosmeticItem = {
-        RemotePath = {"GameEvents", "BuyCosmeticItem"},
-        ArgsTemplate = function(item) return {item} end
+local function createDropdown(shopType, positionY)
+    local config = {
+        path = ASSETS.SHOP_PATHS[shopType],
+        filter = function(name)
+            return not (name:find("_") or name:upper():find("UI")
+        end
     }
-}
-
-function BuyFunction.execute(remoteType, itemName)
-    local config = REMOTE_MAPPINGS[remoteType]
-    if not config then return false end
     
-    local remote = game:GetService("ReplicatedStorage")
-    for _, childName in ipairs(config.RemotePath) do
-        remote = remote:WaitForChild(childName)
-    end
+    local dropdownFrame = Instance.new("Frame")
+    dropdownFrame.Name = shopType.."Dropdown"
+    dropdownFrame.Size = UDim2.new(1, -20, 0, 30)
+    dropdownFrame.Position = UDim2.new(0, 10, 0, positionY)
+    dropdownFrame.BackgroundTransparency = 1
+    dropdownFrame.Parent = frame
     
-    remote:FireServer(unpack(config.ArgsTemplate(itemName)))
-    statusLabel.Text = "Status: Buying "..remoteType.." - "..itemName
-    return true
-end
-
--- Auto-purchase system
-local activeConnections = {}
-
-local function startCategoryPurchase(category)
-    if activeConnections[category] then return end
+    local dropdownButton = Instance.new("TextButton")
+    dropdownButton.Name = "Button"
+    dropdownButton.Size = UDim2.new(1, 0, 0, 30)
+    dropdownButton.Position = UDim2.new(0, 0, 0, 0)
+    dropdownButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    dropdownButton.Text = shopType.." ▼"
+    dropdownButton.Font = Enum.Font.Gotham
+    dropdownButton.TextSize = 14
+    dropdownButton.TextColor3 = Color3.fromRGB(220, 220, 220)
+    dropdownButton.Parent = dropdownFrame
     
-    local itemsText = purchaseControls[category].textBox.Text
-    if itemsText == "" then
-        statusLabel.Text = "Status: No items configured for "..category
-        return
-    end
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.Parent = dropdownButton
+    
+    local optionsFrame = Instance.new("ScrollingFrame")
+    optionsFrame.Name = "Options"
+    optionsFrame.Size = UDim2.new(1, 0, 0, 0)
+    optionsFrame.Position = UDim2.new(0, 0, 0, 35)
+    optionsFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    optionsFrame.BorderSizePixel = 0
+    optionsFrame.ScrollBarThickness = 4
+    optionsFrame.Visible = false
+    optionsFrame.Parent = dropdownFrame
+    
+    local optionsCorner = Instance.new("UICorner")
+    optionsCorner.CornerRadius = UDim.new(0, 6)
+    optionsCorner.Parent = optionsFrame
     
     local items = {}
-    for item in string.gmatch(itemsText, "([^,]+)") do
-        table.insert(items, string.trim(item))
+    if shopType == "CosmeticItem" or shopType == "CosmeticCrate" then
+        local current = ReplicatedStorage
+        for _, part in ipairs(config.path) do
+            current = current:WaitForChild(part)
+        end
+        local data = require(current)
+        for name, _ in pairs(data) do
+            if not items[name] then
+                table.insert(items, name)
+                items[name] = true
+            end
+        end
+    else
+        local current = player
+        for _, part in ipairs(config.path) do
+            current = current:WaitForChild(part)
+        end
+        for _, child in ipairs(current:GetChildren()) do
+            if not config.filter or config.filter(child.Name) then
+                table.insert(items, child.Name)
+            end
+        end
     end
     
-    if #items == 0 then
-        statusLabel.Text = "Status: No valid items for "..category
-        return
-    end
+    local optionHeight = 25
+    optionsFrame.CanvasSize = UDim2.new(0, 0, 0, #items * optionHeight)
     
-    local runService = game:GetService("RunService")
-    local currentIndex = 1
-    
-    activeConnections[category] = runService.Heartbeat:Connect(function()
-        BuyFunction.execute(category, items[currentIndex])
-        currentIndex = currentIndex % #items + 1
-        task.wait(0.5) -- Wait half second between purchases
-    end)
-    
-    purchaseControls[category].toggle.Text = category .. ": ON"
-    purchaseControls[category].toggle.TextColor3 = Color3.fromRGB(100, 255, 100)
-    purchaseControls[category].indicator.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-    statusLabel.Text = "Status: "..category.." auto-purchase active"
-end
-
-local function stopCategoryPurchase(category)
-    if activeConnections[category] then
-        activeConnections[category]:Disconnect()
-        activeConnections[category] = nil
+    for i, itemName in ipairs(items) do
+        local option = Instance.new("TextButton")
+        option.Name = itemName
+        option.Size = UDim2.new(1, -10, 0, optionHeight - 2)
+        option.Position = UDim2.new(0, 5, 0, (i-1)*optionHeight)
+        option.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+        option.Text = itemName
+        option.Font = Enum.Font.Gotham
+        option.TextSize = 12
+        option.TextColor3 = Color3.fromRGB(220, 220, 220)
+        option.TextXAlignment = Enum.TextXAlignment.Left
+        option.Parent = optionsFrame
         
-        purchaseControls[category].toggle.Text = category .. ": OFF"
-        purchaseControls[category].toggle.TextColor3 = Color3.fromRGB(255, 100, 100)
-        purchaseControls[category].indicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-        statusLabel.Text = "Status: "..category.." auto-purchase stopped"
+        local optionCorner = Instance.new("UICorner")
+        optionCorner.CornerRadius = UDim.new(0, 4)
+        optionCorner.Parent = option
+        
+        local selectionIndicator = Instance.new("Frame")
+        selectionIndicator.Name = "Selection"
+        selectionIndicator.Size = UDim2.new(0, 4, 1, 0)
+        selectionIndicator.Position = UDim2.new(0, 0, 0, 0)
+        selectionIndicator.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+        selectionIndicator.Visible = false
+        selectionIndicator.Parent = option
+        
+        option.MouseButton1Click:Connect(function()
+            selectionIndicator.Visible = not selectionIndicator.Visible
+        end)
     end
-end
-
--- Set up toggle buttons
-for category, control in pairs(purchaseControls) do
-    control.toggle.MouseButton1Click:Connect(function()
-        if activeConnections[category] then
-            stopCategoryPurchase(category)
+    
+    local isExpanded = false
+    dropdownButton.MouseButton1Click:Connect(function()
+        isExpanded = not isExpanded
+        if isExpanded then
+            dropdownButton.Text = shopType.." ▲"
+            optionsFrame.Size = UDim2.new(1, 0, 0, math.min(150, #items * optionHeight))
+            optionsFrame.Visible = true
         else
-            startCategoryPurchase(category)
+            dropdownButton.Text = shopType.." ▼"
+            optionsFrame.Size = UDim2.new(1, 0, 0, 0)
+            optionsFrame.Visible = false
         end
     end)
+    
+    return dropdownFrame
 end
 
--- Function to update the display
+local dropdowns = {
+    createDropdown("Seed", 180),
+    createDropdown("Gear", 220),
+    createDropdown("Event", 260),
+    createDropdown("CosmeticItem", 300),
+    createDropdown("CosmeticCrate", 340)
+}
+
+local totalHeight = 400 + (#dropdowns * 40)
+frame.Size = UDim2.new(1, -10, 0, totalHeight)
+mainScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight + 10)
+
+local autoBuyEnabled = false
+local currentValue = 1
+local numberOfRuns = 3
+local delayBetweenRuns = 0.1
+local cycleDelay = 10 * 60
+local buyEggsConnection = nil
+
+local function fireRemote(value)
+    local remotePath = ASSETS.REMOTE_PATHS["BuyPetEgg"]
+    local remote = ReplicatedStorage
+    for _, childName in ipairs(remotePath) do
+        remote = remote:WaitForChild(childName)
+    end
+    remote:FireServer(value)
+    statusLabel.Text = "Status: Buying Egg "..value
+    task.wait(0.1)
+end
+
+local function startAutoBuy()
+    if buyEggsConnection then return end
+    
+    buyEggsConnection = task.spawn(function()
+        while autoBuyEnabled do
+            for i = 1, numberOfRuns do
+                if not autoBuyEnabled then break end
+                fireRemote(currentValue)
+                currentValue = currentValue % 3 + 1
+                if i < numberOfRuns then
+                    task.wait(delayBetweenRuns)
+                end
+            end
+            
+            if autoBuyEnabled then
+                statusLabel.Text = "Status: Waiting ("..math.floor(cycleDelay/60).."m)"
+                local waitTime = cycleDelay
+                while waitTime > 0 and autoBuyEnabled do
+                    task.wait(1)
+                    waitTime = waitTime - 1
+                    if waitTime % 60 == 0 then
+                        statusLabel.Text = "Status: Waiting ("..math.floor(waitTime/60).."m)"
+                    end
+                end
+            end
+        end
+        statusLabel.Text = "Status: Idle"
+    end)
+end
+
+local function stopAutoBuy()
+    autoBuyEnabled = false
+    if buyEggsConnection then
+        task.cancel(buyEggsConnection)
+        buyEggsConnection = nil
+    end
+end
+
+buyEggsButton.MouseButton1Click:Connect(function()
+    autoBuyEnabled = not autoBuyEnabled
+    
+    if autoBuyEnabled then
+        buyEggsButton.Text = "BUY ALL EGGS: ON"
+        buyEggsButton.TextColor3 = Color3.fromRGB(100, 255, 100)
+        buttonIndicator.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        startAutoBuy()
+    else
+        buyEggsButton.Text = "BUY ALL EGGS: OFF"
+        buyEggsButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+        buttonIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        stopAutoBuy()
+    end
+end)
+
 local function updateDisplay()
-    -- Wait for leaderstats to exist
     while not player:FindFirstChild("leaderstats") do
         task.wait(1)
     end
@@ -446,19 +475,15 @@ local function updateDisplay()
     local shecklesValue = leaderstats:FindFirstChild("Sheckles")
     
     if shecklesValue then
-        -- Format sheckles with commas
         local formattedSheckles = tostring(shecklesValue.Value):reverse():gsub("%d%d%d", "%1,"):reverse():gsub("^,", "")
         shecklesLabel.Text = formattedSheckles
         
-        -- Calculate and display estimated time (sheckles / 5 million)
         local estimatedTime = shecklesValue.Value / 5000000
         timeLabel.Text = string.format("%.2f hours", estimatedTime)
         
-        -- Update progress bar (cap at 100%)
         local progress = math.min(shecklesValue.Value / 5000000, 1)
         progressFill.Size = UDim2.new(progress, 0, 1, 0)
         
-        -- Change progress bar color based on completion
         if progress >= 1 then
             progressFill.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
         else
@@ -467,7 +492,6 @@ local function updateDisplay()
     end
 end
 
--- Set up a listener for changes
 local function setupListener()
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
@@ -478,12 +502,10 @@ local function setupListener()
     end
 end
 
--- Initial setup
 player:WaitForChild("leaderstats", 10)
 setupListener()
 updateDisplay()
 
--- Reconnect if leaderstats is added later
 player.ChildAdded:Connect(function(child)
     if child.Name == "leaderstats" then
         setupListener()
