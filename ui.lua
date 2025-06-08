@@ -116,7 +116,7 @@ dividerGradient.Parent = divider
 
 local contentFrame = Instance.new("Frame")
 contentFrame.Name = "ContentFrame"
-contentFrame.Size = UDim2.new(1, -20, 1, -110)
+contentFrame.Size = UDim2.new(1, -20, 1, -150)
 contentFrame.Position = UDim2.new(0, 10, 0, 40)
 contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = frame
@@ -204,21 +204,19 @@ progressFillCorner.Parent = progressFill
 
 local buttonContainer = Instance.new("Frame")
 buttonContainer.Name = "ButtonContainer"
-buttonContainer.Size = UDim2.new(1, -20, 0, 40)
-buttonContainer.Position = UDim2.new(0, 10, 1, -50)
+buttonContainer.Size = UDim2.new(1, -20, 0, 80)
+buttonContainer.Position = UDim2.new(0, 10, 1, -90)
 buttonContainer.BackgroundTransparency = 1
 buttonContainer.Parent = frame
 
 local buyEggsButton = Instance.new("TextButton")
 buyEggsButton.Name = "BuyEggsButton"
-buyEggsButton.Size = UDim2.new(0.5, -5, 1, 0)
+buyEggsButton.Size = UDim2.new(0.5, -5, 0.5, -5)
 buyEggsButton.Position = UDim2.new(0, 0, 0, 0)
 buyEggsButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
 buyEggsButton.AutoButtonColor = false
-buyEggsButton.Text = "BUY ALL EGGS: OFF"
 buyEggsButton.Font = Enum.Font.GothamBold
 buyEggsButton.TextSize = 14
-buyEggsButton.TextColor3 = Color3.fromRGB(255, 100, 100)
 buyEggsButton.Parent = buttonContainer
 
 local buttonCorner = Instance.new("UICorner")
@@ -229,7 +227,6 @@ local buttonIndicator = Instance.new("Frame")
 buttonIndicator.Name = "Indicator"
 buttonIndicator.Size = UDim2.new(1, 0, 0, 3)
 buttonIndicator.Position = UDim2.new(0, 0, 1, -3)
-buttonIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 buttonIndicator.BorderSizePixel = 0
 buttonIndicator.Parent = buyEggsButton
 
@@ -237,10 +234,35 @@ local indicatorCorner = Instance.new("UICorner")
 indicatorCorner.CornerRadius = UDim.new(0, 2)
 indicatorCorner.Parent = buttonIndicator
 
+local continuousToggle = Instance.new("TextButton")
+continuousToggle.Name = "ContinuousToggle"
+continuousToggle.Size = UDim2.new(0.5, -5, 0.5, -5)
+continuousToggle.Position = UDim2.new(0.5, 5, 0, 0)
+continuousToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+continuousToggle.AutoButtonColor = false
+continuousToggle.Font = Enum.Font.GothamBold
+continuousToggle.TextSize = 14
+continuousToggle.Parent = buttonContainer
+
+local continuousCorner = Instance.new("UICorner")
+continuousCorner.CornerRadius = UDim.new(0, 6)
+continuousCorner.Parent = continuousToggle
+
+local continuousIndicator = Instance.new("Frame")
+continuousIndicator.Name = "Indicator"
+continuousIndicator.Size = UDim2.new(1, 0, 0, 3)
+continuousIndicator.Position = UDim2.new(0, 0, 1, -3)
+continuousIndicator.BorderSizePixel = 0
+continuousIndicator.Parent = continuousToggle
+
+local indicatorCorner2 = Instance.new("UICorner")
+indicatorCorner2.CornerRadius = UDim.new(0, 2)
+indicatorCorner2.Parent = continuousIndicator
+
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
-statusLabel.Size = UDim2.new(0.5, -5, 1, 0)
-statusLabel.Position = UDim2.new(0.5, 5, 0, 0)
+statusLabel.Size = UDim2.new(1, 0, 0.5, -5)
+statusLabel.Position = UDim2.new(0, 0, 0.5, 5)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = "Status: Idle"
 statusLabel.Font = Enum.Font.Gotham
@@ -251,13 +273,14 @@ statusLabel.Parent = buttonContainer
 
 local function createDropdown(shopType, positionY)
     local items = Backend.getShopItems(shopType)
+    local config = Backend.getConfig()
     
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Name = shopType.."Dropdown"
     dropdownFrame.Size = UDim2.new(1, -20, 0, 30)
     dropdownFrame.Position = UDim2.new(0, 10, 0, positionY)
     dropdownFrame.BackgroundTransparency = 1
-    dropdownFrame.ZIndex = 50  -- High ZIndex to appear above others
+    dropdownFrame.ZIndex = 50
     dropdownFrame.Parent = frame
     
     local dropdownButton = Instance.new("TextButton")
@@ -269,7 +292,7 @@ local function createDropdown(shopType, positionY)
     dropdownButton.Font = Enum.Font.Gotham
     dropdownButton.TextSize = 14
     dropdownButton.TextColor3 = Color3.fromRGB(220, 220, 220)
-    dropdownButton.ZIndex = 51  -- Higher than frame
+    dropdownButton.ZIndex = 51
     dropdownButton.Parent = dropdownFrame
     
     local buttonCorner = Instance.new("UICorner")
@@ -284,7 +307,7 @@ local function createDropdown(shopType, positionY)
     optionsFrame.BorderSizePixel = 0
     optionsFrame.ScrollBarThickness = 4
     optionsFrame.Visible = false
-    optionsFrame.ZIndex = 52  -- Higher than button
+    optionsFrame.ZIndex = 52
     optionsFrame.Parent = dropdownFrame
     
     local optionsCorner = Instance.new("UICorner")
@@ -305,7 +328,7 @@ local function createDropdown(shopType, positionY)
         option.TextSize = 12
         option.TextColor3 = Color3.fromRGB(220, 220, 220)
         option.TextXAlignment = Enum.TextXAlignment.Left
-        option.ZIndex = 53  -- Higher than options frame
+        option.ZIndex = 53
         option.Parent = optionsFrame
         
         local optionCorner = Instance.new("UICorner")
@@ -318,12 +341,25 @@ local function createDropdown(shopType, positionY)
         selectionIndicator.Position = UDim2.new(0, 0, 0, 0)
         selectionIndicator.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
         selectionIndicator.Visible = false
-        selectionIndicator.ZIndex = 54  -- Highest in hierarchy
+        selectionIndicator.ZIndex = 54
         selectionIndicator.Parent = option
+        
+        local selectedItems = config.continuousPurchase[shopType] or {}
+        for _, selectedName in ipairs(selectedItems) do
+            if itemName == selectedName then
+                selectionIndicator.Visible = true
+                break
+            end
+        end
         
         option.MouseButton1Click:Connect(function()
             selectionIndicator.Visible = not selectionIndicator.Visible
-            Backend.executePurchase(shopType, itemName)
+            
+            if selectionIndicator.Visible then
+                Backend.addContinuousPurchaseItem(shopType, itemName)
+            else
+                Backend.removeContinuousPurchaseItem(shopType, itemName)
+            end
         end)
     end
     
@@ -356,23 +392,60 @@ local totalHeight = 400 + (#dropdowns * 40)
 frame.Size = UDim2.new(1, -10, 0, totalHeight)
 mainScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight + 10)
 
-local autoBuy = Backend.setupAutoBuyEggs(function(status)
+local eggBuyer = Backend.setupAutoBuyEggs(function(status)
     statusLabel.Text = "Status: "..status
 end)
 
+local config = Backend.getConfig()
+
+buyEggsButton.Text = config.autoBuyEggs and "BUY ALL EGGS: ON" or "BUY ALL EGGS: OFF"
+buyEggsButton.TextColor3 = config.autoBuyEggs and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+buttonIndicator.BackgroundColor3 = config.autoBuyEggs and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+
 buyEggsButton.MouseButton1Click:Connect(function()
-    if buyEggsButton.Text == "BUY ALL EGGS: OFF" then
-        buyEggsButton.Text = "BUY ALL EGGS: ON"
-        buyEggsButton.TextColor3 = Color3.fromRGB(100, 255, 100)
-        buttonIndicator.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        autoBuy.start()
-    else
+    if eggBuyer.isRunning() then
         buyEggsButton.Text = "BUY ALL EGGS: OFF"
         buyEggsButton.TextColor3 = Color3.fromRGB(255, 100, 100)
         buttonIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-        autoBuy.stop()
+        eggBuyer.stop()
+    else
+        buyEggsButton.Text = "BUY ALL EGGS: ON"
+        buyEggsButton.TextColor3 = Color3.fromRGB(100, 255, 100)
+        buttonIndicator.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        eggBuyer.start()
     end
 end)
+
+continuousToggle.Text = "CONTINUOUS: OFF"
+continuousToggle.TextColor3 = Color3.fromRGB(255, 100, 100)
+continuousIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+
+local purchaseController = {
+    running = false,
+    stopFunction = nil
+}
+
+local function toggleContinuousPurchase()
+    if purchaseController.running then
+        if purchaseController.stopFunction then
+            purchaseController.stopFunction()
+        end
+        purchaseController.running = false
+        continuousToggle.Text = "CONTINUOUS: OFF"
+        continuousToggle.TextColor3 = Color3.fromRGB(255, 100, 100)
+        continuousIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    else
+        purchaseController.stopFunction = Backend.startContinuousPurchase(function(status)
+            statusLabel.Text = "Status: "..status
+        end)
+        purchaseController.running = true
+        continuousToggle.Text = "CONTINUOUS: ON"
+        continuousToggle.TextColor3 = Color3.fromRGB(100, 255, 100)
+        continuousIndicator.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+    end
+end
+
+continuousToggle.MouseButton1Click:Connect(toggleContinuousPurchase)
 
 Backend.setupShecklesListener(function(formatted, progress, time)
     shecklesLabel.Text = formatted
