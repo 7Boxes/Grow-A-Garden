@@ -63,7 +63,7 @@ titleCorner.Parent = titleBar
 -- Add title text
 local title = Instance.new("TextLabel")
 title.Name = "Title"
-title.Text = "SHECKLES TRACKER"
+title.Text = "JMXHub - GAG"
 title.Size = UDim2.new(1, -20, 1, 0)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
@@ -315,11 +315,11 @@ end
 
 -- Create controls for each category
 local purchaseControls = {
-    GearStock = createPurchaseControl("GearStock", 30, "Sword1, Shield2, Bow3"),
-    SeedStock = createPurchaseControl("SeedStock", 100, "AppleSeed, OrangeSeed, BananaSeed"),
-    CosmeticCrate = createPurchaseControl("CosmeticCrate", 170, "BasicCrate, PremiumCrate"),
-    EventStock = createPurchaseControl("EventStock", 240, "HalloweenItem1, ChristmasItem2"),
-    CosmeticItem = createPurchaseControl("CosmeticItem", 310, "Hat1, Shirt2, Pants3")
+    GearStock = createPurchaseControl("GearStock", 30, "Recall Wrench, Lightning Rod"),
+    SeedStock = createPurchaseControl("SeedStock", 100, "Carrot, Strawberry"),
+    CosmeticCrate = createPurchaseControl("CosmeticCrate", 170, "Common Gnome Crate, Rare Gnome Crate"),
+    EventStock = createPurchaseControl("EventStock", 240, "Flower Seed Pack, Bee Egg"),
+    CosmeticItem = createPurchaseControl("CosmeticItem", 310, "Red Pottery, Orange Umbrella")
 }
 
 -- Status label
