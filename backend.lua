@@ -1,6 +1,12 @@
 local module = {}
 
--- Configuration
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+-- Logging configuration
 local LOG_LEVELS = {
     ERROR = 1,
     WARN = 2,
@@ -9,12 +15,6 @@ local LOG_LEVELS = {
 }
 local CURRENT_LOG_LEVEL = LOG_LEVELS.DEBUG
 
--- Services
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local player = Players.LocalPlayer
-
--- Logging function
 local function log(level, message)
     if level > CURRENT_LOG_LEVEL then return end
     local prefix = ({
@@ -26,62 +26,101 @@ local function log(level, message)
     warn(prefix .. message)
 end
 
--- Asset paths with validation examples
-local ASSETS = {
-    REMOTE_PATHS = {
-        BuyPetEgg = {"GameEvents", "BuyPetEgg"},
-        BuyGearStock = {"GameEvents", "BuyGearStock"},
-        BuySeedStock = {"GameEvents", "BuySeedStock"},
-        BuyCosmeticCrate = {"GameEvents", "BuyCosmeticCrate"},
-        BuyEventShopStock = {"GameEvents", "BuyEventShopStock"},
-        BuyCosmeticItem = {"GameEvents", "BuyCosmeticItem"}
+-- Updated remote mappings with your working configuration
+local REMOTE_MAPPINGS = {
+    GearStock = {
+        RemotePath = {"GameEvents", "BuyGearStock"},
+        ArgsTemplate = function(item) return {item} end
     },
-    SHOP_PATHS = {
-        Seed = {
-            path = {"PlayerGui", "Seed_Shop", "Frame", "ScrollingFrame"},
-            filter = function(name) return not (name:find("_") or name:upper():find("UI")) end
-        },
-        Gear = {
-            path = {"PlayerGui", "Gear_Shop", "Frame", "ScrollingFrame"},
-            filter = function(name) return not (name:find("_") or name:upper():find("UI")) end
-        },
-        Event = {
-            path = {"PlayerGui", "HoneyEventShop_UI", "Frame", "ScrollingFrame"},
-            filter = function(name) return not (name:find("_") or name:upper():find("UI")) end
-        },
-        CosmeticItem = {
-            path = {"ReplicatedStorage", "Data", "CosmeticItemShopData"},
-            validator = function(data)
-                return type(data) == "table" and next(data) ~= nil
-            end,
-            example = [[
-                ["Small Stone Lantern"] = {
-                    CosmeticName = "Small Stone Lantern";
-                    Price = 1000000;
-                }
-            ]]
-        },
-        CosmeticCrate = {
-            path = {"ReplicatedStorage", "Data", "CosmeticCrateShopData"},
-            validator = function(data)
-                return type(data) == "table" and next(data) ~= nil
-            end,
-            example = [[
-                ["Common Gnome Crate"] = {
-                    CrateName = "Common Gnome Crate"; 
-                    Price = 55500000;
-                }
-            ]]
-        }
+    SeedStock = {
+        RemotePath = {"GameEvents", "BuySeedStock"},
+        ArgsTemplate = function(item) return {item} end
+    },
+    CosmeticCrate = {
+        RemotePath = {"GameEvents", "BuyCosmeticCrate"},
+        ArgsTemplate = function(item) return {item} end
+    },
+    EventStock = {
+        RemotePath = {"GameEvents", "BuyEventShopStock"},
+        ArgsTemplate = function(item) return {item} end
+    },
+    CosmeticItem = {
+        RemotePath = {"GameEvents", "BuyCosmeticItem"},
+        ArgsTemplate = function(item) return {item} end
+    },
+    PetEgg = {
+        RemotePath = {"GameEvents", "BuyPetEgg"},
+        ArgsTemplate = function(item) return {tonumber(item)} end
     }
 }
 
--- Core function to get items from any shop type
+-- Shop configuration
+local SHOP_CONFIGS = {
+    Seed = {
+        path = {"PlayerGui", "Seed_Shop", "Frame", "ScrollingFrame"},
+        remoteType = "SeedStock",
+        filter = function(name) return not (name:find("_") or name:upper():find("UI")) end
+    },
+    Gear = {
+        path = {"PlayerGui", "Gear_Shop", "Frame", "ScrollingFrame"},
+        remoteType = "GearStock",
+        filter = function(name) return not (name:find("_") or name:upper():find("UI")) end
+    },
+    Event = {
+        path = {"PlayerGui", "HoneyEventShop_UI", "Frame", "ScrollingFrame"},
+        remoteType = "EventStock",
+        filter = function(name) return not (name:find("_") or name:upper():find("UI")) end
+    },
+    CosmeticItem = {
+        path = {"ReplicatedStorage", "Data", "CosmeticItemShopData"},
+        remoteType = "CosmeticItem",
+        validator = function(data) return type(data) == "table" end
+    },
+    CosmeticCrate = {
+        path = {"ReplicatedStorage", "Data", "CosmeticCrateShopData"},
+        remoteType = "CosmeticCrate",
+        validator = function(data) return type(data) == "table" end
+    }
+}
+
+-- Core purchase execution
+function module.executePurchase(remoteType, itemName)
+    local success, result = pcall(function()
+        log(LOG_LEVELS.DEBUG, string.format("Attempting purchase: %s (%s)", remoteType, itemName))
+        
+        local config = REMOTE_MAPPINGS[remoteType]
+        if not config then
+            error("Invalid remote type: "..tostring(remoteType))
+        end
+        
+        local remote = ReplicatedStorage
+        for i, childName in ipairs(config.RemotePath) do
+            if not remote:FindFirstChild(childName) then
+                error("Missing remote part: "..childName.." at index "..i)
+            end
+            remote = remote:WaitForChild(childName)
+        end
+        
+        local args = config.ArgsTemplate(itemName)
+        remote:FireServer(unpack(args))
+        log(LOG_LEVELS.INFO, "Purchase successful: "..itemName)
+        return true
+    end)
+    
+    if not success then
+        log(LOG_LEVELS.ERROR, "executePurchase failed: "..result)
+        return false
+    end
+    
+    return result
+end
+
+-- Get shop items with improved error handling
 function module.getShopItems(shopType)
     local success, items = pcall(function()
         log(LOG_LEVELS.DEBUG, "Fetching items for shop: "..shopType)
         
-        local config = ASSETS.SHOP_PATHS[shopType]
+        local config = SHOP_CONFIGS[shopType]
         if not config then
             error("Invalid shop type: "..tostring(shopType))
         end
@@ -89,56 +128,30 @@ function module.getShopItems(shopType)
         local items = {}
         local current
         
-        -- Handle module-based shops (Cosmetics)
         if shopType == "CosmeticItem" or shopType == "CosmeticCrate" then
             current = ReplicatedStorage
             for i, part in ipairs(config.path) do
                 if not current:FindFirstChild(part) then
-                    error("Missing path part: "..part.." at index "..i.."\nFull path: "..table.concat(config.path, " → "))
+                    error("Missing path part: "..part.." at index "..i)
                 end
                 current = current:WaitForChild(part)
             end
             
-            if not current:IsA("ModuleScript") then
-                error("Expected ModuleScript, got: "..current.ClassName)
-            end
-            
-            local data
-            local success, err = pcall(function()
-                data = require(current)
-            end)
-            
-            if not success then
-                error("Failed to require module: "..err)
-            end
-            
+            local data = require(current)
             if config.validator and not config.validator(data) then
-                error("Invalid data format in module\nExample expected:\n"..(config.example or ""))
+                error("Invalid data format in module")
             end
             
-            for name, itemData in pairs(data) do
+            for name, _ in pairs(data) do
                 if type(name) == "string" then
-                    if shopType == "CosmeticItem" then
-                        if type(itemData) == "table" and itemData.CosmeticName then
-                            table.insert(items, name)
-                        else
-                            log(LOG_LEVELS.WARN, "Skipping invalid CosmeticItem: "..name)
-                        end
-                    elseif shopType == "CosmeticCrate" then
-                        if type(itemData) == "table" and itemData.CrateName then
-                            table.insert(items, name)
-                        else
-                            log(LOG_LEVELS.WARN, "Skipping invalid CosmeticCrate: "..name)
-                        end
-                    end
+                    table.insert(items, name)
                 end
             end
-        -- Handle GUI-based shops (Seed, Gear, Event)
         else
             current = player
             for i, part in ipairs(config.path) do
                 if not current:FindFirstChild(part) then
-                    error("Missing path part: "..part.." at index "..i.."\nFull path: "..table.concat(config.path, " → "))
+                    error("Missing path part: "..part.." at index "..i)
                 end
                 current = current:WaitForChild(part)
             end
@@ -152,88 +165,75 @@ function module.getShopItems(shopType)
         
         if #items == 0 then
             log(LOG_LEVELS.WARN, "No items found for shop: "..shopType)
-            if config.example then
-                log(LOG_LEVELS.INFO, "Example expected format:\n"..config.example)
-            end
         end
         
         return items
     end)
     
     if not success then
-        log(LOG_LEVELS.ERROR, items)
+        log(LOG_LEVELS.ERROR, "getShopItems failed: "..items)
         return {}
     end
     
     return items
 end
 
--- Purchase execution with validation
-function module.executePurchase(remoteType, itemName)
-    local success, result = pcall(function()
-        log(LOG_LEVELS.DEBUG, string.format("Attempting purchase: %s (%s)", remoteType, itemName))
-        
-        local remotePath = ASSETS.REMOTE_PATHS[remoteType]
-        if not remotePath then
-            error("Invalid remote type: "..tostring(remoteType))
-        end
-        
-        local remote = ReplicatedStorage
-        for i, childName in ipairs(remotePath) do
-            if not remote:FindFirstChild(childName) then
-                error("Missing remote part: "..childName.." at index "..i.."\nFull path: "..table.concat(remotePath, " → "))
-            end
-            remote = remote:WaitForChild(childName)
-        end
-        
-        remote:FireServer(itemName)
-        log(LOG_LEVELS.INFO, "Purchase successful: "..itemName)
-        return true
-    end)
+-- Continuous purchase system
+function module.startContinuousPurchase(config, callback)
+    local connection
+    local purchaseOrder = {"GearStock", "SeedStock", "CosmeticCrate", "EventStock", "CosmeticItem"}
     
-    if not success then
-        log(LOG_LEVELS.ERROR, result)
-        return false
+    local function purchaseLoop()
+        for _, remoteType in ipairs(purchaseOrder) do
+            local items = config[remoteType] or {}
+            for _, itemName in ipairs(items) do
+                if callback then callback("Purchasing: "..itemName) end
+                local success = module.executePurchase(remoteType, itemName)
+                if not success then
+                    log(LOG_LEVELS.WARN, "Failed to purchase: "..itemName)
+                end
+                task.wait(0.5)
+            end
+        end
+        if callback then callback("Cycle completed") end
     end
     
-    return result
+    connection = RunService.Heartbeat:Connect(purchaseLoop)
+    
+    return function()
+        if connection then
+            connection:Disconnect()
+            if callback then callback("Stopped continuous purchases") end
+        end
+    end
 end
 
--- Auto-buy system with state management
+-- Egg auto-buy system
 function module.setupAutoBuyEggs(callback)
     local autoBuyEnabled = false
     local currentValue = 1
     local connection
     
     local function fireRemote(value)
-        local success = module.executePurchase("BuyPetEgg", value)
+        local success = module.executePurchase("PetEgg", tostring(value))
         if success and callback then
             callback("Buying Egg "..value)
-        elseif not success then
-            if callback then callback("Purchase failed") end
+        elseif not success and callback then
+            callback("Purchase failed")
         end
     end
     
     local function start()
-        if autoBuyEnabled then
-            log(LOG_LEVELS.WARN, "Auto-buy already running")
-            return
-        end
-        
+        if autoBuyEnabled then return end
         autoBuyEnabled = true
-        log(LOG_LEVELS.INFO, "Starting auto-buy eggs")
         
         connection = task.spawn(function()
             while autoBuyEnabled do
                 for i = 1, 3 do
                     if not autoBuyEnabled then break end
-                    
                     fireRemote(currentValue)
                     currentValue = currentValue % 3 + 1
-                    
-                    if i < 3 then
-                        task.wait(0.1)
-                    end
+                    if i < 3 then task.wait(0.1) end
                 end
                 
                 if autoBuyEnabled and callback then
@@ -248,22 +248,13 @@ function module.setupAutoBuyEggs(callback)
                     end
                 end
             end
-            
             if callback then callback("Idle") end
         end)
     end
     
     local function stop()
-        if not autoBuyEnabled then
-            log(LOG_LEVELS.WARN, "Auto-buy not running")
-            return
-        end
-        
-        log(LOG_LEVELS.INFO, "Stopping auto-buy eggs")
         autoBuyEnabled = false
-        if connection then
-            task.cancel(connection)
-        end
+        if connection then task.cancel(connection) end
     end
     
     return {
@@ -272,30 +263,18 @@ function module.setupAutoBuyEggs(callback)
     }
 end
 
--- Sheckles tracking with validation
+-- Sheckles tracking
 function module.setupShecklesListener(callback)
     local function update()
-        local success, err = pcall(function()
-            local leaderstats = player:FindFirstChild("leaderstats")
-            if not leaderstats then
-                error("leaderstats not found")
-            end
-            
+        local leaderstats = player:FindFirstChild("leaderstats")
+        if leaderstats then
             local shecklesValue = leaderstats:FindFirstChild("Sheckles")
-            if not shecklesValue then
-                error("Sheckles value not found")
-            end
-            
-            if callback then
+            if shecklesValue and callback then
                 local formatted = tostring(shecklesValue.Value):reverse():gsub("%d%d%d", "%1,"):reverse():gsub("^,", "")
                 local progress = math.min(shecklesValue.Value / 5000000, 1)
                 local time = string.format("%.2f hours", shecklesValue.Value / 5000000)
                 callback(formatted, progress, time)
             end
-        end)
-        
-        if not success then
-            log(LOG_LEVELS.ERROR, "Sheckles update failed: "..err)
         end
     end
     
@@ -304,11 +283,8 @@ function module.setupShecklesListener(callback)
         local shecklesValue = leaderstats:FindFirstChild("Sheckles")
         if shecklesValue then
             shecklesValue:GetPropertyChangedSignal("Value"):Connect(update)
-        else
-            log(LOG_LEVELS.WARN, "Sheckles value not found in existing leaderstats")
         end
     else
-        log(LOG_LEVELS.INFO, "Waiting for leaderstats to be added")
         player.ChildAdded:Connect(function(child)
             if child.Name == "leaderstats" then
                 update()
@@ -320,5 +296,5 @@ function module.setupShecklesListener(callback)
     return update
 end
 
-log(LOG_LEVELS.INFO, "Backend module initialized successfully")
+log(LOG_LEVELS.INFO, "Backend module initialized")
 return module
