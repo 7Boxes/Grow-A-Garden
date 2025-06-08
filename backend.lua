@@ -24,7 +24,87 @@ local DEFAULT_CONFIG = {
 -- Current configuration
 local config = DEFAULT_CONFIG
 
--- Remote mappings based on your exact examples
+-- Hardcoded shop data from decompiled scripts
+local HARDCODED_SHOPS = {
+    CosmeticCrate = {
+        ["Sign Crate"] = {PurchaseID = 3290108854},
+        ["Common Gnome Crate"] = {PurchaseID = 3290108955},
+        ["Fun Crate"] = {PurchaseID = 3290109194},
+        ["Farmers Gnome Crate"] = {PurchaseID = 3290109302},
+        ["Classic Gnome Crate"] = {PurchaseID = 3290109380},
+        ["Statue Crate"] = {PurchaseID = 3290109444}
+    },
+    CosmeticItem = {
+        ["Yellow Umbrella"] = {PurchaseID = 3290145031},
+        ["Orange Umbrella"] = {PurchaseID = 3290145015},
+        ["Brick Stack"] = {PurchaseID = 3290145041},
+        ["Compost Bin"] = {PurchaseID = 3290145025},
+        ["Log"] = {PurchaseID = 3290145010},
+        ["Rock Pile"] = {PurchaseID = 3290145022},
+        ["Rake"] = {PurchaseID = 3290113000},
+        ["Shovel"] = {PurchaseID = 3290113132},
+        ["Torch"] = {PurchaseID = 3290145030},
+        ["Red Pottery"] = {PurchaseID = 3290144998},
+        ["White Pottery"] = {PurchaseID = 3290145014},
+        ["Wood Pile"] = {PurchaseID = 3290145016},
+        ["Small Circle Tile"] = {PurchaseID = 3290145040},
+        ["Medium Circle Tile"] = {PurchaseID = 3290145046},
+        ["Small Path Tile"] = {PurchaseID = 3290145036},
+        ["Medium Path Tile"] = {PurchaseID = 3290145011},
+        ["Large Path Tile"] = {PurchaseID = 3290145052},
+        ["Axe Stump"] = {PurchaseID = 3290145012},
+        ["Bookshelf"] = {PurchaseID = 3290145044},
+        ["Brown Bench"] = {PurchaseID = 3290145003},
+        ["Hay Bale"] = {PurchaseID = 3290785122},
+        ["Light On Ground"] = {PurchaseID = 3290145047},
+        ["Log Bench"] = {PurchaseID = 3290110287},
+        ["Mini TV"] = {PurchaseID = 3290145028},
+        ["Shovel Grave"] = {PurchaseID = 3290145050},
+        ["Small Stone Lantern"] = {PurchaseID = 3290145009},
+        ["Small Stone Pad"] = {PurchaseID = 3290145024},
+        ["Large Stone Pad"] = {PurchaseID = 3290145006},
+        ["Stone Lantern"] = {PurchaseID = 3290145017},
+        ["Viney Beam"] = {PurchaseID = 3290145026},
+        ["Water Trough"] = {PurchaseID = 3290145001},
+        ["White Bench"] = {PurchaseID = 3290144996},
+        ["Wood Fence"] = {PurchaseID = 3290144997},
+        ["Small Wood Flooring"] = {PurchaseID = 3290145005},
+        ["Medium Wood Flooring"] = {PurchaseID = 3290145051},
+        ["Large Wood Flooring"] = {PurchaseID = 3290145007},
+        ["Small Stone Table"] = {PurchaseID = 3290145042},
+        ["Medium Stone Table"] = {PurchaseID = 3290145039},
+        ["Long Stone Table"] = {PurchaseID = 3290145023},
+        ["Lamp Post"] = {PurchaseID = 3290145019},
+        ["Bamboo Wind Chime"] = {PurchaseID = 3290112781},
+        ["Metal Wind Chime"] = {PurchaseID = 3290112884},
+        ["Bird Bath"] = {PurchaseID = 3290144990},
+        ["Brown Stone Pillar"] = {PurchaseID = 3290145018},
+        ["Dark Stone Pillar"] = {PurchaseID = 3290145000},
+        ["Grey Stone Pillar"] = {PurchaseID = 3290145035},
+        ["Campfire"] = {PurchaseID = 3290145034},
+        ["Clothesline"] = {PurchaseID = 3290145013},
+        ["Cooking Pot"] = {PurchaseID = 3290145020},
+        ["Curved Canopy"] = {PurchaseID = 3290144999},
+        ["Flat Canopy"] = {PurchaseID = 3290145032},
+        ["Small Wood Arbour"] = {PurchaseID = 3290145004},
+        ["Square Metal Arbour"] = {PurchaseID = 3290145029},
+        ["Small Wood Table"] = {PurchaseID = 3290145021},
+        ["Large Wood Table"] = {PurchaseID = 3290145002},
+        ["Wheelbarrow"] = {PurchaseID = 3290112654},
+        ["Blue Well"] = {PurchaseID = 3290145027},
+        ["Brown Well"] = {PurchaseID = 3290113294},
+        ["Red Well"] = {PurchaseID = 3290115132},
+        ["Green Tractor"] = {PurchaseID = 3290113504},
+        ["Red Tractor"] = {PurchaseID = 3290114982},
+        ["Ring Walkway"] = {PurchaseID = 3290145033},
+        ["Viney Ring Walkway"] = {PurchaseID = 3290145045},
+        ["Large Wood Arbour"] = {PurchaseID = 3290114021},
+        ["Round Metal Arbour"] = {PurchaseID = 3290115313},
+        ["Frog Fountain"] = {PurchaseID = 3290145037}
+    }
+}
+
+-- Remote mappings
 local REMOTE_MAPPINGS = {
     GearStock = {
         Path = {"GameEvents", "BuyGearStock"},
@@ -36,15 +116,21 @@ local REMOTE_MAPPINGS = {
     },
     CosmeticCrate = {
         Path = {"GameEvents", "BuyCosmeticCrate"},
-        ArgsTemplate = function(item) return {item} end
+        ArgsTemplate = function(item) 
+            local data = HARDCODED_SHOPS.CosmeticCrate[item]
+            return {data and data.PurchaseID or 0}
+        end
     },
     EventStock = {
         Path = {"GameEvents", "BuyEventShopStock"},
         ArgsTemplate = function(item) return {item} end
     },
     CosmeticItem = {
-        Path = {"GameEvents", "BuyCosmeticitem"}, -- Note lowercase 'i'
-        ArgsTemplate = function(item) return {item} end
+        Path = {"GameEvents", "BuyCosmeticitem"},
+        ArgsTemplate = function(item) 
+            local data = HARDCODED_SHOPS.CosmeticItem[item]
+            return {data and data.PurchaseID or 0}
+        end
     },
     PetEgg = {
         Path = {"GameEvents", "BuyPetEgg"},
@@ -119,11 +205,60 @@ function module.executePurchase(remoteType, itemName)
     return true
 end
 
+-- Get shop items from the GUI
+local function getGuiItems(guiPath)
+    local items = {}
+    local success, gui = pcall(function()
+        local pathParts = {}
+        for part in string.gmatch(guiPath, "[^%.]+") do
+            table.insert(pathParts, part)
+        end
+        
+        local current = player.PlayerGui
+        for _, part in ipairs(pathParts) do
+            current = current:FindFirstChild(part)
+            if not current then return nil end
+        end
+        return current
+    end)
+    
+    if success and gui then
+        for _, child in ipairs(gui:GetChildren()) do
+            if not string.find(child.Name, "_") then -- Exclude entries with _
+                table.insert(items, child.Name)
+            end
+        end
+    end
+    
+    return items
+end
+
 -- Get shop items
 function module.getShopItems(shopType)
-    -- Implementation from your working version
-    -- This should return a list of valid item names
-    return {"Item1", "Item2"} -- Placeholder
+    if shopType == "CosmeticCrate" or shopType == "CosmeticItem" then
+        -- Return keys from hardcoded data
+        local items = {}
+        for name in pairs(HARDCODED_SHOPS[shopType]) do
+            table.insert(items, name)
+        end
+        return items
+    else
+        -- Get from GUI paths
+        local guiPath = ""
+        if shopType == "GearStock" then
+            guiPath = "Gear_Shop.Frame.ScrollingFrame"
+        elseif shopType == "SeedStock" then
+            guiPath = "Seed_Shop.Frame.ScrollingFrame"
+        elseif shopType == "EventStock" then
+            guiPath = "HoneyEventShop_UI.Frame.ScrollingFrame"
+        end
+        
+        if guiPath ~= "" then
+            return getGuiItems(guiPath)
+        end
+    end
+    
+    return {}
 end
 
 -- Continuous purchase system
