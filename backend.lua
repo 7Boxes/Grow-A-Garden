@@ -26,6 +26,7 @@ local config = DEFAULT_CONFIG
 
 -- Hardcoded shop data from decompiled scripts
 local HARDCODED_SHOPS = {
+    -- Gear Shop (Script_1749421957)
     GearStock = {
         ["Watering Can"] = {PurchaseID = 3260229242},
         ["Trowel"] = {PurchaseID = 3265946561},
@@ -40,6 +41,7 @@ local HARDCODED_SHOPS = {
         ["Friendship Pot"] = {PurchaseID = 3301473650}
     },
     
+    -- Seed Shop (Script_1749422456) - Only items with StockChance > 0
     SeedStock = {
         ["Carrot"] = {PurchaseID = 3248692171},
         ["Strawberry"] = {PurchaseID = 3248695947},
@@ -65,6 +67,7 @@ local HARDCODED_SHOPS = {
         ["Banana"] = {PurchaseID = 3269001250}
     },
     
+    -- Event Shop (Script_1749422001)
     EventStock = {
         ["Flower Seed Pack"] = {PurchaseID = 3295395160},
         ["Lavender"] = {PurchaseID = 3301505595},
@@ -82,6 +85,7 @@ local HARDCODED_SHOPS = {
         ["Honey Walkway"] = {PurchaseID = 3295398026}
     },
     
+    -- Cosmetic shops (from previous decompiled scripts)
     CosmeticCrate = {
         ["Sign Crate"] = {PurchaseID = 3290108854},
         ["Common Gnome Crate"] = {PurchaseID = 3290108955},
@@ -271,20 +275,14 @@ function module.executePurchase(remoteType, itemName)
     return true
 end
 
--- Get shop items - now returns both the display name and purchase ID
+-- Get shop items
 function module.getShopItems(shopType)
     if HARDCODED_SHOPS[shopType] then
         local items = {}
-        for name, data in pairs(HARDCODED_SHOPS[shopType]) do
-            table.insert(items, {
-                DisplayName = name,
-                PurchaseID = data.PurchaseID
-            })
+        for name in pairs(HARDCODED_SHOPS[shopType]) do
+            table.insert(items, name)
         end
-        -- Sort alphabetically by display name
-        table.sort(items, function(a, b)
-            return a.DisplayName < b.DisplayName
-        end)
+        table.sort(items)
         return items
     end
     return {}
