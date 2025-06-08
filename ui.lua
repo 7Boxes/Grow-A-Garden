@@ -16,7 +16,7 @@ screenGui.Parent = playerGui
 local mainScrollingFrame = Instance.new("ScrollingFrame")
 mainScrollingFrame.Name = "MainScroller"
 mainScrollingFrame.Size = UDim2.new(0, 340, 0, 500)
-mainScrollingFrame.Position = UDim2.new(0.5, -170, 0.5, -250)
+mainScrollingFrame.Position = UDim2.new(0.5, -170, 0, 150)
 mainScrollingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 mainScrollingFrame.BackgroundTransparency = 1
 mainScrollingFrame.ScrollBarThickness = 6
@@ -257,6 +257,7 @@ local function createDropdown(shopType, positionY)
     dropdownFrame.Size = UDim2.new(1, -20, 0, 30)
     dropdownFrame.Position = UDim2.new(0, 10, 0, positionY)
     dropdownFrame.BackgroundTransparency = 1
+    dropdownFrame.ZIndex = 50  -- High ZIndex to appear above others
     dropdownFrame.Parent = frame
     
     local dropdownButton = Instance.new("TextButton")
@@ -268,6 +269,7 @@ local function createDropdown(shopType, positionY)
     dropdownButton.Font = Enum.Font.Gotham
     dropdownButton.TextSize = 14
     dropdownButton.TextColor3 = Color3.fromRGB(220, 220, 220)
+    dropdownButton.ZIndex = 51  -- Higher than frame
     dropdownButton.Parent = dropdownFrame
     
     local buttonCorner = Instance.new("UICorner")
@@ -282,6 +284,7 @@ local function createDropdown(shopType, positionY)
     optionsFrame.BorderSizePixel = 0
     optionsFrame.ScrollBarThickness = 4
     optionsFrame.Visible = false
+    optionsFrame.ZIndex = 52  -- Higher than button
     optionsFrame.Parent = dropdownFrame
     
     local optionsCorner = Instance.new("UICorner")
@@ -302,6 +305,7 @@ local function createDropdown(shopType, positionY)
         option.TextSize = 12
         option.TextColor3 = Color3.fromRGB(220, 220, 220)
         option.TextXAlignment = Enum.TextXAlignment.Left
+        option.ZIndex = 53  -- Higher than options frame
         option.Parent = optionsFrame
         
         local optionCorner = Instance.new("UICorner")
@@ -314,6 +318,7 @@ local function createDropdown(shopType, positionY)
         selectionIndicator.Position = UDim2.new(0, 0, 0, 0)
         selectionIndicator.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
         selectionIndicator.Visible = false
+        selectionIndicator.ZIndex = 54  -- Highest in hierarchy
         selectionIndicator.Parent = option
         
         option.MouseButton1Click:Connect(function()
