@@ -1,0 +1,292 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ShecklesLogger"
+screenGui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Size = UDim2.new(0, 300, 0, 150)
+frame.Position = UDim2.new(0.5, -150, 0.1, 0) -- Centered horizontally, near top
+frame.AnchorPoint = Vector2.new(0.5, 0)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.BackgroundTransparency = 0.2
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Text = "jajtxs egg bot"
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
+title.Parent = frame
+
+local divider = Instance.new("Frame")
+divider.Name = "Divider"
+divider.Size = UDim2.new(1, -20, 0, 1)
+divider.Position = UDim2.new(0, 10, 0, 35)
+divider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+divider.BorderSizePixel = 0
+divider.Parent = frame
+
+local shecklesLabel = Instance.new("TextLabel")
+shecklesLabel.Name = "ShecklesLabel"
+shecklesLabel.Text = "Sheckles: 0"
+shecklesLabel.Size = UDim2.new(1, -20, 0, 30)
+shecklesLabel.Position = UDim2.new(0, 10, 0, 45)
+shecklesLabel.BackgroundTransparency = 1
+shecklesLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+shecklesLabel.Font = Enum.Font.SourceSans
+shecklesLabel.TextSize = 18
+shecklesLabel.TextXAlignment = Enum.TextXAlignment.Left
+shecklesLabel.Parent = frame
+
+local timeLabel = Instance.new("TextLabel")
+timeLabel.Name = "TimeLabel"
+timeLabel.Text = "Estimated Time Remaining: 0 hours"
+timeLabel.Size = UDim2.new(1, -20, 0, 30)
+timeLabel.Position = UDim2.new(0, 10, 0, 80)
+timeLabel.BackgroundTransparency = 1
+timeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+timeLabel.Font = Enum.Font.SourceSans
+timeLabel.TextSize = 18
+timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+timeLabel.Parent = frame
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
+
+local function updateDisplay()
+    while not player:FindFirstChild("leaderstats") do
+        wait(1)
+    end
+    
+    local leaderstats = player:FindFirstChild("leaderstats")
+    local shecklesValue = leaderstats:FindFirstChild("Sheckles")
+    
+    if shecklesValue then
+        shecklesLabel.Text = string.format("Sheckles: %s", tostring(shecklesValue.Value))
+        
+        local estimatedTime = shecklesValue.Value / 5000000
+        timeLabel.Text = string.format("Estimated Time Remaining: %.2f hours", estimatedTime)
+    end
+end
+
+local function setupListener()
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if leaderstats then
+        local shecklesValue = leaderstats:FindFirstChild("Sheckles")
+        if shecklesValue then
+            shecklesValue:GetPropertyChangedSignal("Value"):Connect(updateDisplay)
+        end
+    end
+end
+
+player:WaitForChild("leaderstats", 10) -- Wait up to 10 seconds for leaderstats
+setupListener()
+updateDisplay()
+
+player.ChildAdded:Connect(function(child)
+    if child.Name == "leaderstats" then
+        setupListener()
+        updateDisplay()
+    end
+end)
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BuyPetEgg = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("BuyPetEgg")
+
+local function fireRemote(value)
+    local args = {value}  -- Using the current value in the args table
+    BuyPetEgg:FireServer(unpack(args))
+    print("Fired BuyPetEgg with value:", value)
+end
+
+local function equipEggTool()
+    while not player:FindFirstChild("Backpack") do
+        task.wait(0.1)
+    end
+    
+    local backpack = player.Backpack
+    
+    local eggTool
+    for _, item in ipairs(backpack:GetChildren()) do
+        if item:IsA("Tool") and string.find(string.lower(item.Name), "egg") then
+            eggTool = item
+            break
+        end
+    end
+    
+    if not eggTool then
+        return false, "No egg tool found in backpack"
+    end
+    
+    local character = player.Character
+    if not character then
+        return false, "No character found"
+    end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then
+        return false, "No humanoid found"
+    end
+    
+    humanoid:UnequipTools()
+    task.wait(0.05) -- Small delay
+    eggTool.Parent = character
+    
+    return true, "Equipped: "..eggTool.Name
+end
+
+local function teleportAndFarm()
+    local Debris = game:GetService("Debris")
+    local UIS = game:GetService("UserInputService")
+    
+    local function getDistance(point1, point2)
+        return (point1 - point2).Magnitude
+    end
+    
+    local function generateValidPositions(part, count, minDistance)
+        local positions = {}
+        local size = part.Size
+        local cf = part.CFrame
+        local minX, maxX = -size.X/2, size.X/2
+        local minY, maxY = -size.Y/2, size.Y/2
+        local minZ, maxZ = -size.Z/2, size.Z/2
+        
+        for i = 1, count do
+            local valid = false
+            local attempts = 0
+            local newPos
+            
+            while not valid and attempts < 100 do
+                attempts += 1
+                
+                local x = math.random() * (maxX - minX) + minX
+                local y = math.random() * (maxY - minY) + minY
+                local z = math.random() * (maxZ - minZ) + minZ
+                newPos = cf * Vector3.new(x, y, z)
+                
+                valid = true
+                for _, pos in ipairs(positions) do
+                    local distXZ = math.sqrt((newPos.X - pos.X)^2 + (newPos.Z - pos.Z)^2)
+                    if distXZ < minDistance then
+                        valid = false
+                        break
+                    end
+                end
+            end
+            
+            if valid then
+                table.insert(positions, newPos)
+            end
+        end
+        
+        return positions
+    end
+    
+    local function teleportAndClick(character, position)
+        local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+        if rootPart then
+            rootPart.CFrame = CFrame.new(position + Vector3.new(0, 3, 0)) -- Teleport slightly above
+            rootPart.CFrame = CFrame.new(position) -- Snap to exact position
+        end
+        
+        task.wait(0.2)
+        local clickPos = Vector2.new(UIS:GetMouseLocation().X, UIS:GetMouseLocation().Y)
+        UIS:SetMouseLocation(clickPos.X, clickPos.Y)
+        mouse1click()
+    end
+    
+    local folder = workspace:FindFirstChild("Farm")
+                  and workspace.Farm:FindFirstChild("Farm")
+                  and workspace.Farm.Farm:FindFirstChild("Important")
+                  and workspace.Farm.Farm.Important:FindFirstChild("Plant_Locations")
+    
+    if not folder then
+        warn("Folder not found: workspace.Farm.Farm.Important.Plant_Locations")
+        return
+    end
+    
+    local character = player.Character or player.CharacterAdded:Wait()
+    
+    local closestPart = nil
+    local minDistance = math.huge
+    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+    local playerPosition = rootPart.Position
+    
+    for _, child in ipairs(folder:GetChildren()) do
+        if child:IsA("BasePart") then
+            local distance = getDistance(playerPosition, child.Position)
+            if distance < minDistance then
+                minDistance = distance
+                closestPart = child
+            end
+        end
+    end
+    
+    if not closestPart then
+        warn("No valid parts found in Plant_Locations folder")
+        return
+    end
+    
+    local positions = generateValidPositions(closestPart, 3, 10)
+    if #positions < 3 then
+        warn("Could not generate enough valid positions")
+        return
+    end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = closestPart
+    highlight.FillTransparency = 0.7
+    highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+    Debris:AddItem(highlight, 20)
+    
+    for i, pos in ipairs(positions) do
+        print(string.format("Teleporting to position %d: (%.2f, %.2f, %.2f)", i, pos.X, pos.Y, pos.Z))
+        teleportAndClick(character, pos)
+        
+        if i < #positions then
+            task.wait(5) -- Wait 5 seconds between teleports
+        end
+    end
+    
+    print("Completed all teleportations")
+end
+
+local currentValue = 1
+local numberOfRuns = 3  -- Number of times to run in each cycle
+local delayBetweenRuns = 0.1  -- 0.1 seconds between each fire in the cycle
+local cycleDelay = 10 * 60  -- 10 minutes between cycles (converted to seconds)
+
+while true do
+    local success, result = pcall(teleportAndFarm)
+    if not success then
+        warn("Teleport/Farm routine failed:", result)
+    end
+    
+    for i = 1, numberOfRuns do
+        fireRemote(currentValue)
+        
+        task.wait(0.5) -- Small delay to allow tool to appear
+        local equipSuccess, equipResult = pcall(equipEggTool)
+        if not equipSuccess then
+            warn("Equip failed:", equipResult)
+        end
+        
+        currentValue = currentValue % 3 + 1
+        
+        if i < numberOfRuns then
+            wait(delayBetweenRuns)
+        end
+    end
+    
+    wait(cycleDelay)
+end
