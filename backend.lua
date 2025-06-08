@@ -1,4 +1,4 @@
-local Backend = {}
+local module = {}
 
 local ASSETS = {
     REMOTE_PATHS = {
@@ -22,7 +22,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
-function Backend.getShopItems(shopType)
+function module.getShopItems(shopType)
     local config = {
         path = ASSETS.SHOP_PATHS[shopType],
         filter = function(name)
@@ -57,7 +57,7 @@ function Backend.getShopItems(shopType)
     return items
 end
 
-function Backend.executePurchase(remoteType, itemName)
+function module.executePurchase(remoteType, itemName)
     local remotePath = ASSETS.REMOTE_PATHS[remoteType]
     if not remotePath then return false end
     
@@ -70,33 +70,33 @@ function Backend.executePurchase(remoteType, itemName)
     return true
 end
 
-function Backend.startAutoBuyEggs(callback)
+function module.setupAutoBuyEggs(callback)
+    local autoBuyEnabled = false
     local currentValue = 1
-    local running = false
     local connection
     
     local function fireRemote(value)
-        Backend.executePurchase("BuyPetEgg", value)
-        callback("Buying Egg "..value)
+        module.executePurchase("BuyPetEgg", value)
+        if callback then callback("Buying Egg "..value) end
     end
     
     local function start()
-        if running then return end
-        running = true
+        if autoBuyEnabled then return end
+        autoBuyEnabled = true
         
         connection = task.spawn(function()
-            while running do
+            while autoBuyEnabled do
                 for i = 1, 3 do
-                    if not running then break end
+                    if not autoBuyEnabled then break end
                     fireRemote(currentValue)
                     currentValue = currentValue % 3 + 1
                     if i < 3 then task.wait(0.1) end
                 end
                 
-                if running then
+                if autoBuyEnabled and callback then
                     callback("Waiting (10m)")
                     local waitTime = 600
-                    while waitTime > 0 and running do
+                    while waitTime > 0 and autoBuyEnabled do
                         task.wait(1)
                         waitTime = waitTime - 1
                         if waitTime % 60 == 0 then
@@ -105,24 +105,27 @@ function Backend.startAutoBuyEggs(callback)
                     end
                 end
             end
-            callback("Idle")
+            if callback then callback("Idle") end
         end)
     end
     
     local function stop()
-        running = false
+        autoBuyEnabled = false
         if connection then task.cancel(connection) end
     end
     
-    return start, stop
+    return {
+        start = start,
+        stop = stop
+    }
 end
 
-function Backend.setupShecklesListener(callback)
+function module.setupShecklesListener(callback)
     local function update()
         local leaderstats = player:FindFirstChild("leaderstats")
         if leaderstats then
             local shecklesValue = leaderstats:FindFirstChild("Sheckles")
-            if shecklesValue then
+            if shecklesValue and callback then
                 local formatted = tostring(shecklesValue.Value):reverse():gsub("%d%d%d", "%1,"):reverse():gsub("^,", "")
                 local progress = math.min(shecklesValue.Value / 5000000, 1)
                 local time = string.format("%.2f hours", shecklesValue.Value / 5000000)
@@ -131,20 +134,22 @@ function Backend.setupShecklesListener(callback)
         end
     end
     
-    player:WaitForChild("leaderstats", 10)
     local leaderstats = player:FindFirstChild("leaderstats")
-    if leaderstats then
+    if not leaderstats then
+        player.ChildAdded:Connect(function(child)
+            if child.Name == "leaderstats" then
+                update()
+            end
+        end)
+    else
         local shecklesValue = leaderstats:FindFirstChild("Sheckles")
         if shecklesValue then
             shecklesValue:GetPropertyChangedSignal("Value"):Connect(update)
         end
     end
-    player.ChildAdded:Connect(function(child)
-        if child.Name == "leaderstats" then
-            update()
-        end
-    end)
+    
     update()
+    return update
 end
 
-return Backend
+return module
