@@ -209,13 +209,13 @@ end
 local function getGuiItems(guiPath)
     local items = {}
     local success, gui = pcall(function()
-        local pathParts = {}
-        for part in string.gmatch(guiPath, "[^%.]+") do
-            table.insert(pathParts, part)
-        end
+        -- Handle the different path formats
+        local path = string.gsub(guiPath, "gameGetService%(%)", "game:GetService(")
+        path = string.gsub(path, "%),", "):")
+        path = string.gsub(path, "%,", ".")
         
         local current = player.PlayerGui
-        for _, part in ipairs(pathParts) do
+        for part in string.gmatch(path, "[^%.]+") do
             current = current:FindFirstChild(part)
             if not current then return nil end
         end
@@ -228,6 +228,8 @@ local function getGuiItems(guiPath)
                 table.insert(items, child.Name)
             end
         end
+    else
+        warn("[GUI] Failed to find GUI path: "..guiPath)
     end
     
     return items
@@ -235,27 +237,27 @@ end
 
 -- Get shop items
 function module.getShopItems(shopType)
+    -- For hardcoded shops
     if shopType == "CosmeticCrate" or shopType == "CosmeticItem" then
-        -- Return keys from hardcoded data
         local items = {}
         for name in pairs(HARDCODED_SHOPS[shopType]) do
             table.insert(items, name)
         end
+        table.sort(items)
         return items
-    else
-        -- Get from GUI paths
-        local guiPath = ""
-        if shopType == "GearStock" then
-            guiPath = "Gear_Shop.Frame.ScrollingFrame"
-        elseif shopType == "SeedStock" then
-            guiPath = "Seed_Shop.Frame.ScrollingFrame"
-        elseif shopType == "EventStock" then
-            guiPath = "HoneyEventShop_UI.Frame.ScrollingFrame"
-        end
-        
-        if guiPath ~= "" then
-            return getGuiItems(guiPath)
-        end
+    end
+    
+    -- For GUI-based shops
+    local guiPaths = {
+        GearStock = "gameGetService(\"Players\"),LocalPlayer,PlayerGui.Gear_Shop.Frame.ScrollingFrame",
+        SeedStock = "game.GetService(\"Players\").LocalPlayer.PlayerGui.Seed_Shop.Frame.ScrollingFrame",
+        EventStock = "gameGetService(\"Players\").LocalPlayer.PlayerGui.HoneyEventShop_UI.Frame.ScrollingFrame"
+    }
+    
+    if guiPaths[shopType] then
+        local items = getGuiItems(guiPaths[shopType])
+        table.sort(items)
+        return items
     end
     
     return {}
@@ -419,6 +421,21 @@ end
 -- Get current configuration
 function module.getConfig()
     return config
+end
+
+-- Toggle auto-buy eggs
+function module.toggleAutoBuyEggs()
+    config.autoBuyEggs = not config.autoBuyEggs
+    saveConfig()
+    return config.autoBuyEggs
+end
+
+-- Clear all continuous purchases
+function module.clearAllContinuousPurchases()
+    for shopType, _ in pairs(config.continuousPurchase) do
+        config.continuousPurchase[shopType] = {}
+    end
+    saveConfig()
 end
 
 return module
