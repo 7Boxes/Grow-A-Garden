@@ -351,7 +351,7 @@ local totalHeight = 400 + (#dropdowns * 40)
 frame.Size = UDim2.new(1, -10, 0, totalHeight)
 mainScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight + 10)
 
-local startAutoBuy, stopAutoBuy = Backend.startAutoBuyEggs(function(status)
+local autoBuy = Backend.setupAutoBuyEggs(function(status)
     statusLabel.Text = "Status: "..status
 end)
 
@@ -360,12 +360,12 @@ buyEggsButton.MouseButton1Click:Connect(function()
         buyEggsButton.Text = "BUY ALL EGGS: ON"
         buyEggsButton.TextColor3 = Color3.fromRGB(100, 255, 100)
         buttonIndicator.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        startAutoBuy()
+        autoBuy.start()
     else
         buyEggsButton.Text = "BUY ALL EGGS: OFF"
         buyEggsButton.TextColor3 = Color3.fromRGB(255, 100, 100)
         buttonIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-        stopAutoBuy()
+        autoBuy.stop()
     end
 end)
 
