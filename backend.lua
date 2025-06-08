@@ -26,6 +26,66 @@ local config = DEFAULT_CONFIG
 
 -- Hardcoded shop data from decompiled scripts
 local HARDCODED_SHOPS = {
+    -- Gear Shop (Script_1749421957)
+    GearStock = {
+        ["Watering Can"] = {PurchaseID = 3260229242},
+        ["Trowel"] = {PurchaseID = 3265946561},
+        ["Recall Wrench"] = {PurchaseID = 3282918403},
+        ["Basic Sprinkler"] = {PurchaseID = 3265889601},
+        ["Advanced Sprinkler"] = {PurchaseID = 3265889751},
+        ["Godly Sprinkler"] = {PurchaseID = 3265889948},
+        ["Lightning Rod"] = {PurchaseID = 3265946758},
+        ["Master Sprinkler"] = {PurchaseID = 3267580365},
+        ["Favorite Tool"] = {PurchaseID = 3281679093},
+        ["Harvest Tool"] = {PurchaseID = 3286038236},
+        ["Friendship Pot"] = {PurchaseID = 3301473650}
+    },
+    
+    -- Seed Shop (Script_1749422456) - Only items with StockChance > 0
+    SeedStock = {
+        ["Carrot"] = {PurchaseID = 3248692171},
+        ["Strawberry"] = {PurchaseID = 3248695947},
+        ["Blueberry"] = {PurchaseID = 3248690960},
+        ["Orange Tulip"] = {PurchaseID = 3265927408},
+        ["Tomato"] = {PurchaseID = 3248696942},
+        ["Corn"] = {PurchaseID = 3248692845},
+        ["Daffodil"] = {PurchaseID = 3265927978},
+        ["Watermelon"] = {PurchaseID = 3248697546},
+        ["Pumpkin"] = {PurchaseID = 3248695199},
+        ["Apple"] = {PurchaseID = 3248716238},
+        ["Bamboo"] = {PurchaseID = 3261009117},
+        ["Coconut"] = {PurchaseID = 3248744789},
+        ["Cactus"] = {PurchaseID = 3260940714},
+        ["Dragon Fruit"] = {PurchaseID = 3253012192},
+        ["Mango"] = {PurchaseID = 3259333414},
+        ["Grape"] = {PurchaseID = 3261068725},
+        ["Mushroom"] = {PurchaseID = 3273973729},
+        ["Pepper"] = {PurchaseID = 3277675404},
+        ["Cacao"] = {PurchaseID = 3282870834},
+        ["Beanstalk"] = {PurchaseID = 3284390402},
+        ["Ember Lily"] = {PurchaseID = 3300984139},
+        ["Banana"] = {PurchaseID = 3269001250}
+    },
+    
+    -- Event Shop (Script_1749422001)
+    EventStock = {
+        ["Flower Seed Pack"] = {PurchaseID = 3295395160},
+        ["Lavender"] = {PurchaseID = 3301505595},
+        ["Nectarshade"] = {PurchaseID = 3301505385},
+        ["Nectarine"] = {PurchaseID = 3295402526},
+        ["Hive Fruit"] = {PurchaseID = 3295395667},
+        ["Pollen Radar"] = {PurchaseID = 3301505788},
+        ["Nectar Staff"] = {PurchaseID = 3301505981},
+        ["Honey Sprinkler"] = {PurchaseID = 3295397583},
+        ["Bee Egg"] = {PurchaseID = 3295398638},
+        ["Bee Crate"] = {PurchaseID = 3295396781},
+        ["Honey Comb"] = {PurchaseID = 3295398991},
+        ["Bee Chair"] = {PurchaseID = 3295397103},
+        ["Honey Torch"] = {PurchaseID = 3295399979},
+        ["Honey Walkway"] = {PurchaseID = 3295398026}
+    },
+    
+    -- Cosmetic shops (from previous decompiled scripts)
     CosmeticCrate = {
         ["Sign Crate"] = {PurchaseID = 3290108854},
         ["Common Gnome Crate"] = {PurchaseID = 3290108955},
@@ -34,6 +94,7 @@ local HARDCODED_SHOPS = {
         ["Classic Gnome Crate"] = {PurchaseID = 3290109380},
         ["Statue Crate"] = {PurchaseID = 3290109444}
     },
+    
     CosmeticItem = {
         ["Yellow Umbrella"] = {PurchaseID = 3290145031},
         ["Orange Umbrella"] = {PurchaseID = 3290145015},
@@ -108,11 +169,17 @@ local HARDCODED_SHOPS = {
 local REMOTE_MAPPINGS = {
     GearStock = {
         Path = {"GameEvents", "BuyGearStock"},
-        ArgsTemplate = function(item) return {item} end
+        ArgsTemplate = function(item) 
+            local data = HARDCODED_SHOPS.GearStock[item]
+            return {data and data.PurchaseID or 0}
+        end
     },
     SeedStock = {
         Path = {"GameEvents", "BuySeedStock"},
-        ArgsTemplate = function(item) return {item} end
+        ArgsTemplate = function(item) 
+            local data = HARDCODED_SHOPS.SeedStock[item]
+            return {data and data.PurchaseID or 0}
+        end
     },
     CosmeticCrate = {
         Path = {"GameEvents", "BuyCosmeticCrate"},
@@ -123,7 +190,10 @@ local REMOTE_MAPPINGS = {
     },
     EventStock = {
         Path = {"GameEvents", "BuyEventShopStock"},
-        ArgsTemplate = function(item) return {item} end
+        ArgsTemplate = function(item) 
+            local data = HARDCODED_SHOPS.EventStock[item]
+            return {data and data.PurchaseID or 0}
+        end
     },
     CosmeticItem = {
         Path = {"GameEvents", "BuyCosmeticitem"},
@@ -205,70 +275,9 @@ function module.executePurchase(remoteType, itemName)
     return true
 end
 
--- Get shop items from the GUI
-local function getGuiItems(shopType)
-    print("[DEBUG] Scanning shop type:", shopType)
-    
-    -- Define the exact paths for each shop type
-    local shopPaths = {
-        GearStock = {
-            path = "game:GetService('Players').LocalPlayer.PlayerGui.Gear_Shop.Frame.ScrollingFrame",
-            verified = false
-        },
-        SeedStock = {
-            path = "game:GetService('Players').LocalPlayer.PlayerGui.Seed_Shop.Frame.ScrollingFrame",
-            verified = false
-        },
-        EventStock = {
-            path = "game:GetService('Players').LocalPlayer.PlayerGui.HoneyEventShop_UI.Frame.ScrollingFrame",
-            verified = false
-        }
-    }
-    
-    -- Verify we have a valid shop type
-    if not shopPaths[shopType] then
-        warn("[ERROR] Invalid shop type for GUI scanning:", shopType)
-        return {}
-    end
-    
-    local path = shopPaths[shopType].path
-    print("[DEBUG] Full GUI path:", path)
-    
-    -- Navigate through the GUI hierarchy
-    local current = game
-    for _, part in ipairs(path:split('.')) do
-        part = part:gsub("'", "") -- Remove quotes from service names
-        current = current:FindFirstChild(part)
-        if not current then
-            warn("[ERROR] Failed to find path part:", part)
-            return {}
-        end
-    end
-    
-    -- Log all children for debugging
-    print(string.format("[DEBUG] Found %d children in %s:", #current:GetChildren(), current:GetFullName()))
-    for i, child in ipairs(current:GetChildren()) do
-        print(string.format("%d. %s (Class: %s)", i, child.Name, child.ClassName))
-    end
-    
-    -- Filter and collect valid items
-    local items = {}
-    for _, child in ipairs(current:GetChildren()) do
-        -- Skip UI elements and items with underscores
-        if not child.Name:find("_") and child.ClassName ~= "UIListLayout" then
-            table.insert(items, child.Name)
-        end
-    end
-    
-    print("[DEBUG] Found items:", #items)
-    table.sort(items)
-    return items
-end
-
 -- Get shop items
 function module.getShopItems(shopType)
-    -- For hardcoded shops
-    if shopType == "CosmeticCrate" or shopType == "CosmeticItem" then
+    if HARDCODED_SHOPS[shopType] then
         local items = {}
         for name in pairs(HARDCODED_SHOPS[shopType]) do
             table.insert(items, name)
@@ -276,57 +285,6 @@ function module.getShopItems(shopType)
         table.sort(items)
         return items
     end
-    
-    -- For GUI-based shops
-    return getGuiItems(shopType)
-end
-
--- Get shop items
-function module.getShopItems(shopType)
-    -- For hardcoded shops
-    if shopType == "CosmeticCrate" or shopType == "CosmeticItem" then
-        local items = {}
-        for name in pairs(HARDCODED_SHOPS[shopType]) do
-            table.insert(items, name)
-        end
-        table.sort(items)
-        return items
-    end
-    
-    -- For GUI-based shops
-    local guiPaths = {
-        GearStock = "gameGetService(\"Players\"),LocalPlayer,PlayerGui.Gear_Shop.Frame.ScrollingFrame",
-        SeedStock = "game.GetService(\"Players\").LocalPlayer.PlayerGui.Seed_Shop.Frame.ScrollingFrame",
-        EventStock = "gameGetService(\"Players\").LocalPlayer.PlayerGui.HoneyEventShop_UI.Frame.ScrollingFrame"
-    }
-    
-    if guiPaths[shopType] then
-        local items = getGuiItems(guiPaths[shopType])
-        if #items == 0 then
-            -- Fallback to scanning immediate children if no items found
-            local pathParts = {}
-            for part in guiPaths[shopType]:gmatch("[^%.%,]+") do
-                table.insert(pathParts, part:gsub("\"", ""))
-            end
-            
-            local current = game
-            for _, part in ipairs(pathParts) do
-                current = current:FindFirstChild(part)
-                if not current then break end
-            end
-            
-            if current then
-                for _, child in ipairs(current:GetChildren()) do
-                    if not child.Name:find("_") then
-                        table.insert(items, child.Name)
-                    end
-                end
-            end
-        end
-        table.sort(items)
-        return items
-    end
-    
     return {}
 end
 
