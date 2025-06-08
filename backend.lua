@@ -208,28 +208,49 @@ end
 -- Get shop items from the GUI
 local function getGuiItems(guiPath)
     local items = {}
-    local success, gui = pcall(function()
-        -- Handle the different path formats
-        local path = string.gsub(guiPath, "gameGetService%(%)", "game:GetService(")
-        path = string.gsub(path, "%),", "):")
-        path = string.gsub(path, "%,", ".")
+    
+    -- Normalize the path string
+    local path = guiPath
+        :gsub("gameGetService%(", "game:GetService(") -- Fix method call
+        :gsub("%),", "):") -- Fix commas after GetService
+        :gsub("%,", ".") -- Replace remaining commas with dots
+        :gsub("%s+", "") -- Remove all whitespace
+    
+    -- Navigate through the GUI hierarchy
+    local success, current = pcall(function()
+        local parts = {}
+        for part in path:gmatch("[^%.]+") do
+            table.insert(parts, part)
+        end
         
-        local current = player.PlayerGui
-        for part in string.gmatch(path, "[^%.]+") do
+        local current = game
+        for _, part in ipairs(parts) do
             current = current:FindFirstChild(part)
             if not current then return nil end
         end
         return current
     end)
     
-    if success and gui then
-        for _, child in ipairs(gui:GetChildren()) do
-            if not string.find(child.Name, "_") then -- Exclude entries with _
-                table.insert(items, child.Name)
+    if success and current then
+        for _, child in ipairs(current:GetChildren()) do
+            -- Filter out unwanted items (those with underscores or special names)
+            if not child.Name:find("_") and child:IsA("Frame") then
+                -- Check for a proper item structure (adjust based on your actual UI structure)
+                local itemName = child:FindFirstChild("ItemName") 
+                    or child:FindFirstChild("NameLabel")
+                    or child.Name
+                
+                if type(itemName) == "string" then
+                    table.insert(items, itemName)
+                elseif itemName and itemName:IsA("TextLabel") then
+                    table.insert(items, itemName.Text)
+                else
+                    table.insert(items, child.Name)
+                end
             end
         end
     else
-        warn("[GUI] Failed to find GUI path: "..guiPath)
+        warn("[GUI] Failed to find path: "..path)
     end
     
     return items
@@ -256,6 +277,27 @@ function module.getShopItems(shopType)
     
     if guiPaths[shopType] then
         local items = getGuiItems(guiPaths[shopType])
+        if #items == 0 then
+            -- Fallback to scanning immediate children if no items found
+            local pathParts = {}
+            for part in guiPaths[shopType]:gmatch("[^%.%,]+") do
+                table.insert(pathParts, part:gsub("\"", ""))
+            end
+            
+            local current = game
+            for _, part in ipairs(pathParts) do
+                current = current:FindFirstChild(part)
+                if not current then break end
+            end
+            
+            if current then
+                for _, child in ipairs(current:GetChildren()) do
+                    if not child.Name:find("_") then
+                        table.insert(items, child.Name)
+                    end
+                end
+            end
+        end
         table.sort(items)
         return items
     end
