@@ -3,6 +3,10 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Tweening service
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
 -- Store home position and camera state
 local homePosition
 local homeCameraCFrame
@@ -190,19 +194,60 @@ local function resetCamera()
 end
 
 local function clickCenterScreen()
-    local viewportSize = workspace.CurrentCamera.ViewportSize
-    local center = Vector2.new(viewportSize.X/2, viewportSize.Y/2)
-    mouse1click(center.X, center.Y)
+    local success, err = pcall(function()
+        -- Get the viewport size
+        local viewportSize = workspace.CurrentCamera.ViewportSize
+        local center = Vector2.new(viewportSize.X/2, viewportSize.Y/2)
+        
+        -- Create mouse down event
+        local inputDown = Instance.new("InputObject")
+        inputDown.UserInputType = Enum.UserInputType.MouseButton1
+        inputDown.UserInputState = Enum.UserInputState.Begin
+        inputDown.Position = center
+        
+        -- Create mouse up event
+        local inputUp = Instance.new("InputObject")
+        inputUp.UserInputType = Enum.UserInputType.MouseButton1
+        inputUp.UserInputState = Enum.UserInputState.End
+        inputUp.Position = center
+        
+        -- Get UserInputService
+        local uis = game:GetService("UserInputService")
+        
+        -- Send the events
+        uis:ProcessInput(inputDown)
+        task.wait(0.1) -- Short delay between down and up
+        uis:ProcessInput(inputUp)
+    end)
+    
+    if not success then
+        warn("Failed to click:", err)
+    end
 end
 
-local function teleportToPosition(position)
+local function tweenToPosition(position)
     local character = player.Character
     if not character then return false end
     
     local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
     if not rootPart then return false end
     
-    rootPart.CFrame = CFrame.new(position)
+    -- Create tween info
+    local tweenInfo = TweenInfo.new(
+        1, -- Time
+        Enum.EasingStyle.Quad, -- Easing style
+        Enum.EasingDirection.Out, -- Easing direction
+        0, -- Repeat count
+        false, -- Reverses
+        0 -- Delay
+    )
+    
+    -- Create and play tween
+    local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = CFrame.new(position)})
+    tween:Play()
+    
+    -- Wait for tween to complete
+    tween.Completed:Wait()
     return true
 end
 
@@ -248,6 +293,7 @@ local cycleDelay = 10 * 60 -- 10 minutes
 
 while true do
     -- Buy eggs first
+    print("Starting egg purchase cycle...")
     for i = 1, numberOfRuns do
         fireRemote(currentValue)
         currentValue = currentValue % 3 + 1
@@ -255,24 +301,57 @@ while true do
             wait(delayBetweenRuns)
         end
     end
+    print("Egg purchases complete")
     
     -- Setup for farming
+    print("Setting up camera for farming...")
     setupCameraForFarming()
+    
+    -- Get farm positions
+    print("Generating farm positions...")
     local farmPositions = generateFarmPositions()
     
-    -- Farm at each position
-    for _, position in ipairs(farmPositions) do
-        teleportToPosition(position)
-        wait(0.5) -- Stabilize
-        clickCenterScreen()
-        equipNextEggTool()
-        wait(1) -- Wait before next position
+    if #farmPositions > 0 then
+        print("Beginning farming at "..#farmPositions.." locations")
+        
+        -- Farm at each position
+        for i, position in ipairs(farmPositions) do
+            print(string.format("Moving to position %d/%d", i, #farmPositions))
+            
+            -- Tween to position
+            local tweenSuccess = tweenToPosition(position)
+            if not tweenSuccess then
+                warn("Failed to tween to position")
+                continue
+            end
+            
+            -- Stabilize
+            task.wait(0.5)
+            
+            -- Click center
+            print("Clicking center screen...")
+            clickCenterScreen()
+            
+            -- Equip next tool
+            print("Equipping next egg tool...")
+            local equipSuccess = equipNextEggTool()
+            print(equipSuccess and "Tool equipped" or "No tool found")
+            
+            -- Wait before next position
+            if i < #farmPositions then
+                task.wait(1)
+            end
+        end
+    else
+        warn("No valid farm positions found")
     end
     
     -- Return home and reset camera
-    teleportToPosition(homePosition)
+    print("Returning home...")
+    tweenToPosition(homePosition)
     resetCamera()
     
     -- Wait for next cycle
+    print(string.format("Waiting %.1f minutes for next cycle...", cycleDelay/60))
     wait(cycleDelay)
 end
