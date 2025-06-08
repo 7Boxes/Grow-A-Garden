@@ -1,5 +1,6 @@
 -- Wait for the game to fully load
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -10,10 +11,10 @@ screenGui.Parent = playerGui
 
 local frame = Instance.new("Frame")
 frame.Name = "MainFrame"
-frame.Size = UDim2.new(0, 320, 0, 180) -- Slightly larger for better spacing
-frame.Position = UDim2.new(0.5, -160, 0.1, 0) -- Centered horizontally, near top
+frame.Size = UDim2.new(0, 320, 0, 230) -- Increased height for buttons
+frame.Position = UDim2.new(0.5, -160, 0.1, 0)
 frame.AnchorPoint = Vector2.new(0.5, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35) -- Darker background
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 frame.BackgroundTransparency = 0.15
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
@@ -59,7 +60,7 @@ local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 8)
 titleCorner.Parent = titleBar
 
--- Add title text with better typography
+-- Add title text
 local title = Instance.new("TextLabel")
 title.Name = "Title"
 title.Text = "SHECKLES TRACKER"
@@ -72,7 +73,7 @@ title.TextSize = 14
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = titleBar
 
--- Add username display (showing only last 3 characters)
+-- Add username display
 local username = player.Name
 local hiddenUsername = string.rep("*", #username - 3) .. string.sub(username, -3)
 
@@ -109,7 +110,7 @@ dividerGradient.Parent = divider
 -- Main content area
 local contentFrame = Instance.new("Frame")
 contentFrame.Name = "ContentFrame"
-contentFrame.Size = UDim2.new(1, -20, 1, -50)
+contentFrame.Size = UDim2.new(1, -20, 1, -110) -- Adjusted for buttons
 contentFrame.Position = UDim2.new(0, 10, 0, 40)
 contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = frame
@@ -136,7 +137,7 @@ shecklesLabel.Text = "0"
 shecklesLabel.Size = UDim2.new(1, -30, 1, 0)
 shecklesLabel.Position = UDim2.new(0, 30, 0, 0)
 shecklesLabel.BackgroundTransparency = 1
-shecklesLabel.TextColor3 = Color3.fromRGB(255, 215, 100) -- Gold color for currency
+shecklesLabel.TextColor3 = Color3.fromRGB(255, 215, 100)
 shecklesLabel.Font = Enum.Font.GothamBold
 shecklesLabel.TextSize = 24
 shecklesLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -198,11 +199,139 @@ local progressFillCorner = Instance.new("UICorner")
 progressFillCorner.CornerRadius = UDim.new(1, 0)
 progressFillCorner.Parent = progressFill
 
+-- Button container
+local buttonContainer = Instance.new("Frame")
+buttonContainer.Name = "ButtonContainer"
+buttonContainer.Size = UDim2.new(1, -20, 0, 40)
+buttonContainer.Position = UDim2.new(0, 10, 1, -50)
+buttonContainer.BackgroundTransparency = 1
+buttonContainer.Parent = frame
+
+-- Buy All Eggs button
+local buyEggsButton = Instance.new("TextButton")
+buyEggsButton.Name = "BuyEggsButton"
+buyEggsButton.Size = UDim2.new(0.5, -5, 1, 0)
+buyEggsButton.Position = UDim2.new(0, 0, 0, 0)
+buyEggsButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+buyEggsButton.AutoButtonColor = false
+buyEggsButton.Text = "BUY ALL EGGS: OFF"
+buyEggsButton.Font = Enum.Font.GothamBold
+buyEggsButton.TextSize = 14
+buyEggsButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+buyEggsButton.Parent = buttonContainer
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 6)
+buttonCorner.Parent = buyEggsButton
+
+-- Button state indicator
+local buttonIndicator = Instance.new("Frame")
+buttonIndicator.Name = "Indicator"
+buttonIndicator.Size = UDim2.new(1, 0, 0, 3)
+buttonIndicator.Position = UDim2.new(0, 0, 1, -3)
+buttonIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+buttonIndicator.BorderSizePixel = 0
+buttonIndicator.Parent = buyEggsButton
+
+local indicatorCorner = Instance.new("UICorner")
+indicatorCorner.CornerRadius = UDim.new(0, 2)
+indicatorCorner.Parent = buttonIndicator
+
+-- Status label for auto-buy
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(0.5, -5, 1, 0)
+statusLabel.Position = UDim2.new(0.5, 5, 0, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Status: Idle"
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 12
+statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = buttonContainer
+
+-- Auto-buy functionality
+local autoBuyEnabled = false
+local currentValue = 1
+local numberOfRuns = 3
+local delayBetweenRuns = 0.1
+local cycleDelay = 10 * 60
+local buyEggsConnection = nil
+
+local function fireRemote(value)
+    local BuyPetEgg = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("BuyPetEgg")
+    local args = {value}
+    BuyPetEgg:FireServer(unpack(args))
+    statusLabel.Text = "Status: Buying Egg "..value
+    task.wait(0.1) -- Small delay to show status
+end
+
+local function startAutoBuy()
+    if buyEggsConnection then return end
+    
+    buyEggsConnection = task.spawn(function()
+        while autoBuyEnabled do
+            -- Run the cycle of 3 fires
+            for i = 1, numberOfRuns do
+                if not autoBuyEnabled then break end
+                fireRemote(currentValue)
+                
+                -- Update value for next run (cycles through 1, 2, 3)
+                currentValue = currentValue % 3 + 1
+                
+                -- Wait between each fire in the cycle (if not the last one)
+                if i < numberOfRuns then
+                    task.wait(delayBetweenRuns)
+                end
+            end
+            
+            if autoBuyEnabled then
+                statusLabel.Text = "Status: Waiting ("..math.floor(cycleDelay/60).."m)"
+                -- Wait for the next cycle (10 minutes)
+                local waitTime = cycleDelay
+                while waitTime > 0 and autoBuyEnabled do
+                    task.wait(1)
+                    waitTime = waitTime - 1
+                    if waitTime % 60 == 0 then
+                        statusLabel.Text = "Status: Waiting ("..math.floor(waitTime/60).."m)"
+                    end
+                end
+            end
+        end
+        statusLabel.Text = "Status: Idle"
+    end)
+end
+
+local function stopAutoBuy()
+    autoBuyEnabled = false
+    if buyEggsConnection then
+        task.cancel(buyEggsConnection)
+        buyEggsConnection = nil
+    end
+end
+
+-- Toggle button functionality
+buyEggsButton.MouseButton1Click:Connect(function()
+    autoBuyEnabled = not autoBuyEnabled
+    
+    if autoBuyEnabled then
+        buyEggsButton.Text = "BUY ALL EGGS: ON"
+        buyEggsButton.TextColor3 = Color3.fromRGB(100, 255, 100)
+        buttonIndicator.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        startAutoBuy()
+    else
+        buyEggsButton.Text = "BUY ALL EGGS: OFF"
+        buyEggsButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+        buttonIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        stopAutoBuy()
+    end
+end)
+
 -- Function to update the display
 local function updateDisplay()
     -- Wait for leaderstats to exist
     while not player:FindFirstChild("leaderstats") do
-        wait(1)
+        task.wait(1)
     end
     
     local leaderstats = player:FindFirstChild("leaderstats")
@@ -223,9 +352,9 @@ local function updateDisplay()
         
         -- Change progress bar color based on completion
         if progress >= 1 then
-            progressFill.BackgroundColor3 = Color3.fromRGB(100, 255, 100) -- Bright green when complete
+            progressFill.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
         else
-            progressFill.BackgroundColor3 = Color3.fromRGB(100, 200, 100) -- Normal green
+            progressFill.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
         end
     end
 end
@@ -242,7 +371,7 @@ local function setupListener()
 end
 
 -- Initial setup
-player:WaitForChild("leaderstats", 10) -- Wait up to 10 seconds for leaderstats
+player:WaitForChild("leaderstats", 10)
 setupListener()
 updateDisplay()
 
