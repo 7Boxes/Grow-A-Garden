@@ -206,54 +206,79 @@ function module.executePurchase(remoteType, itemName)
 end
 
 -- Get shop items from the GUI
-local function getGuiItems(guiPath)
-    local items = {}
+local function getGuiItems(shopType)
+    print("[DEBUG] Scanning shop type:", shopType)
     
-    -- Normalize the path string
-    local path = guiPath
-        :gsub("gameGetService%(", "game:GetService(") -- Fix method call
-        :gsub("%),", "):") -- Fix commas after GetService
-        :gsub("%,", ".") -- Replace remaining commas with dots
-        :gsub("%s+", "") -- Remove all whitespace
+    -- Define the exact paths for each shop type
+    local shopPaths = {
+        GearStock = {
+            path = "game:GetService('Players').LocalPlayer.PlayerGui.Gear_Shop.Frame.ScrollingFrame",
+            verified = false
+        },
+        SeedStock = {
+            path = "game:GetService('Players').LocalPlayer.PlayerGui.Seed_Shop.Frame.ScrollingFrame",
+            verified = false
+        },
+        EventStock = {
+            path = "game:GetService('Players').LocalPlayer.PlayerGui.HoneyEventShop_UI.Frame.ScrollingFrame",
+            verified = false
+        }
+    }
     
-    -- Navigate through the GUI hierarchy
-    local success, current = pcall(function()
-        local parts = {}
-        for part in path:gmatch("[^%.]+") do
-            table.insert(parts, part)
-        end
-        
-        local current = game
-        for _, part in ipairs(parts) do
-            current = current:FindFirstChild(part)
-            if not current then return nil end
-        end
-        return current
-    end)
-    
-    if success and current then
-        for _, child in ipairs(current:GetChildren()) do
-            -- Filter out unwanted items (those with underscores or special names)
-            if not child.Name:find("_") and child:IsA("Frame") then
-                -- Check for a proper item structure (adjust based on your actual UI structure)
-                local itemName = child:FindFirstChild("ItemName") 
-                    or child:FindFirstChild("NameLabel")
-                    or child.Name
-                
-                if type(itemName) == "string" then
-                    table.insert(items, itemName)
-                elseif itemName and itemName:IsA("TextLabel") then
-                    table.insert(items, itemName.Text)
-                else
-                    table.insert(items, child.Name)
-                end
-            end
-        end
-    else
-        warn("[GUI] Failed to find path: "..path)
+    -- Verify we have a valid shop type
+    if not shopPaths[shopType] then
+        warn("[ERROR] Invalid shop type for GUI scanning:", shopType)
+        return {}
     end
     
+    local path = shopPaths[shopType].path
+    print("[DEBUG] Full GUI path:", path)
+    
+    -- Navigate through the GUI hierarchy
+    local current = game
+    for _, part in ipairs(path:split('.')) do
+        part = part:gsub("'", "") -- Remove quotes from service names
+        current = current:FindFirstChild(part)
+        if not current then
+            warn("[ERROR] Failed to find path part:", part)
+            return {}
+        end
+    end
+    
+    -- Log all children for debugging
+    print(string.format("[DEBUG] Found %d children in %s:", #current:GetChildren(), current:GetFullName()))
+    for i, child in ipairs(current:GetChildren()) do
+        print(string.format("%d. %s (Class: %s)", i, child.Name, child.ClassName))
+    end
+    
+    -- Filter and collect valid items
+    local items = {}
+    for _, child in ipairs(current:GetChildren()) do
+        -- Skip UI elements and items with underscores
+        if not child.Name:find("_") and child.ClassName ~= "UIListLayout" then
+            table.insert(items, child.Name)
+        end
+    end
+    
+    print("[DEBUG] Found items:", #items)
+    table.sort(items)
     return items
+end
+
+-- Get shop items
+function module.getShopItems(shopType)
+    -- For hardcoded shops
+    if shopType == "CosmeticCrate" or shopType == "CosmeticItem" then
+        local items = {}
+        for name in pairs(HARDCODED_SHOPS[shopType]) do
+            table.insert(items, name)
+        end
+        table.sort(items)
+        return items
+    end
+    
+    -- For GUI-based shops
+    return getGuiItems(shopType)
 end
 
 -- Get shop items
