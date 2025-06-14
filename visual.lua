@@ -1,5 +1,5 @@
 -- Fruit Mutation UI Editor
--- By DeepSeek Chat
+-- By DeepSeek Chat - Updated Version
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -15,7 +15,7 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 350, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -50) -- Moved down 150 pixels (from -200 to -50)
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 MainFrame.BorderSizePixel = 0
@@ -90,11 +90,33 @@ CloseButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
 end)
 
+-- Function to get just the name from the text object
+local function getCurrentName(path)
+    local success, target = pcall(function()
+        return loadstring("return " .. path)()
+    end)
+    
+    if success and target then
+        return target.Text
+    end
+    return ""
+end
+
+-- Function to set just the name to the text object
+local function setName(path, newName)
+    pcall(function()
+        local obj = loadstring("return " .. path)()
+        if obj then
+            obj.Text = newName
+        end
+    end)
+end
+
 -- Function to create property editors
 local function createPropertyEditor(label, path, defaultColor)
     local Container = Instance.new("Frame")
     Container.Name = "PropertyContainer"
-    Container.Size = UDim2.new(1, 0, 0, 80)
+    Container.Size = UDim2.new(1, 0, 0, 70) -- Reduced height since we're simplifying
     Container.BackgroundTransparency = 1
     Container.Parent = ContentFrame
 
@@ -109,71 +131,59 @@ local function createPropertyEditor(label, path, defaultColor)
     Label.TextSize = 14
     Label.Parent = Container
 
-    local PathLabel = Instance.new("TextLabel")
-    PathLabel.Name = "PathLabel"
-    PathLabel.Text = path
-    PathLabel.Size = UDim2.new(1, 0, 0, 15)
-    PathLabel.Position = UDim2.new(0, 0, 0, 20)
-    PathLabel.BackgroundTransparency = 1
-    PathLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-    PathLabel.TextXAlignment = Enum.TextXAlignment.Left
-    PathLabel.Font = Enum.Font.Gotham
-    PathLabel.TextSize = 10
-    PathLabel.TextWrapped = true
-    PathLabel.Parent = Container
-
     local TextBox = Instance.new("TextBox")
     TextBox.Name = "TextBox"
-    TextBox.PlaceholderText = "Enter text..."
-    TextBox.Size = UDim2.new(1, 0, 0, 30)
-    TextBox.Position = UDim2.new(0, 0, 0, 40)
+    TextBox.PlaceholderText = "Enter " .. label:lower() .. "..."
+    TextBox.Size = UDim2.new(1, -70, 0, 30) -- Adjusted width for color button
+    TextBox.Position = UDim2.new(0, 0, 0, 25)
     TextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
     TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     TextBox.Font = Enum.Font.Gotham
     TextBox.TextSize = 14
+    TextBox.Text = getCurrentName(path)
     TextBox.Parent = Container
 
     local ColorPicker = Instance.new("TextButton")
     ColorPicker.Name = "ColorPicker"
     ColorPicker.Text = "Color"
-    ColorPicker.Size = UDim2.new(0, 60, 0, 25)
-    ColorPicker.Position = UDim2.new(1, -60, 0, 75)
+    ColorPicker.Size = UDim2.new(0, 60, 0, 30)
+    ColorPicker.Position = UDim2.new(1, -60, 0, 25)
     ColorPicker.BackgroundColor3 = defaultColor or Color3.fromRGB(255, 255, 255)
     ColorPicker.TextColor3 = Color3.fromRGB(0, 0, 0)
     ColorPicker.Font = Enum.Font.Gotham
     ColorPicker.TextSize = 12
     ColorPicker.Parent = Container
 
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 4)
-    UICorner.Parent = ColorPicker
-
-    -- Get current values
+    -- Get current color
     local success, target = pcall(function()
         return loadstring("return " .. path)()
     end)
-
+    
     if success and target then
-        TextBox.Text = target.Text
         ColorPicker.BackgroundColor3 = target.TextColor3
     end
 
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Parent = ColorPicker
+    UICorner = UICorner:Clone()
+    UICorner.Parent = TextBox
+
     -- Apply changes
     local function applyChanges()
-        local newText = TextBox.Text
+        local newName = TextBox.Text
         local newColor = ColorPicker.BackgroundColor3
         
-        local success = pcall(function()
+        -- Set the name
+        setName(path, newName)
+        
+        -- Set the color
+        pcall(function()
             local obj = loadstring("return " .. path)()
             if obj then
-                obj.Text = newText
                 obj.TextColor3 = newColor
             end
         end)
-        
-        if not success then
-            warn("Failed to update property at path: " .. path)
-        end
     end
 
     TextBox.FocusLost:Connect(applyChanges)
