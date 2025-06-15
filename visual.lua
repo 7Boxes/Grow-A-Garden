@@ -1,8 +1,9 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
+-- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "FruitMutationEditor"
 ScreenGui.ResetOnSpawn = false
@@ -11,7 +12,7 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 350, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -50)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -50) -- Moved down 150 pixels (from -200 to -50)
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 MainFrame.BorderSizePixel = 0
@@ -59,7 +60,7 @@ UICorner.Parent = CloseButton
 
 local ContentFrame = Instance.new("ScrollingFrame")
 ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, -20, 1, -100)
+ContentFrame.Size = UDim2.new(1, -20, 1, -60)
 ContentFrame.Position = UDim2.new(0, 10, 0, 50)
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.BorderSizePixel = 0
@@ -71,41 +72,7 @@ local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.Parent = ContentFrame
 
-local ButtonFrame = Instance.new("Frame")
-ButtonFrame.Name = "ButtonFrame"
-ButtonFrame.Size = UDim2.new(1, -20, 0, 30)
-ButtonFrame.Position = UDim2.new(0, 10, 1, -40)
-ButtonFrame.BackgroundTransparency = 1
-ButtonFrame.Parent = MainFrame
-
-local RefreshButton = Instance.new("TextButton")
-RefreshButton.Name = "RefreshButton"
-RefreshButton.Text = "Refresh"
-RefreshButton.Size = UDim2.new(0.5, -5, 1, 0)
-RefreshButton.Position = UDim2.new(0, 0, 0, 0)
-RefreshButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-RefreshButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-RefreshButton.Font = Enum.Font.Gotham
-RefreshButton.TextSize = 14
-RefreshButton.Parent = ButtonFrame
-
-local SaveButton = Instance.new("TextButton")
-SaveButton.Name = "SaveButton"
-SaveButton.Text = "Save"
-SaveButton.Size = UDim2.new(0.5, -5, 1, 0)
-SaveButton.Position = UDim2.new(0.5, 5, 0, 0)
-SaveButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-SaveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-SaveButton.Font = Enum.Font.Gotham
-SaveButton.TextSize = 14
-SaveButton.Parent = ButtonFrame
-
-local UICorner2 = Instance.new("UICorner")
-UICorner2.CornerRadius = UDim.new(0, 4)
-UICorner2.Parent = RefreshButton
-local UICorner3 = UICorner2:Clone()
-UICorner3.Parent = SaveButton
-
+-- Toggle visibility with key (e.g., F5)
 local isVisible = true
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.F5 and not gameProcessed then
@@ -114,49 +81,39 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
+-- Close button functionality
 CloseButton.MouseButton1Click:Connect(function()
     isVisible = false
     MainFrame.Visible = false
 end)
 
-local function getFruitData()
-    local fruitPath = 'game:GetService("Players").LocalPlayer.PlayerGui.FruitMutation_UI.Frame.FruitName'
-    local mutationPath = 'game:GetService("Players").LocalPlayer.PlayerGui.FruitMutation_UI.Frame.FruitMutation'
-    
-    local fruitData = {}
-    local mutationData = {}
-    
-    local success, fruitObj = pcall(function()
-        return loadstring("return " .. fruitPath)()
+-- Function to get just the name from the text object
+local function getCurrentName(path)
+    local success, target = pcall(function()
+        return loadstring("return " .. path)()
     end)
     
-    if success and fruitObj then
-        fruitData.text = fruitObj.Text
-        fruitData.color = fruitObj.TextColor3
+    if success and target then
+        return target.Text
     end
-    
-    local index = 1
-    while true do
-        local success, mutationObj = pcall(function()
-            return loadstring("return " .. mutationPath .. ":FindFirstChild('Mutation" .. index .. "')")()
-        end)
-        
-        if not success or not mutationObj then break end
-        
-        table.insert(mutationData, {
-            text = mutationObj.Text,
-            color = mutationObj.TextColor3
-        })
-        index = index + 1
-    end
-    
-    return fruitData, mutationData
+    return ""
 end
 
-local function createPropertyEditor(label, index)
+-- Function to set just the name to the text object
+local function setName(path, newName)
+    pcall(function()
+        local obj = loadstring("return " .. path)()
+        if obj then
+            obj.Text = newName
+        end
+    end)
+end
+
+-- Function to create property editors
+local function createPropertyEditor(label, path, defaultColor)
     local Container = Instance.new("Frame")
     Container.Name = "PropertyContainer"
-    Container.Size = UDim2.new(1, 0, 0, 70)
+    Container.Size = UDim2.new(1, 0, 0, 70) -- Reduced height since we're simplifying
     Container.BackgroundTransparency = 1
     Container.Parent = ContentFrame
 
@@ -174,149 +131,133 @@ local function createPropertyEditor(label, index)
     local TextBox = Instance.new("TextBox")
     TextBox.Name = "TextBox"
     TextBox.PlaceholderText = "Enter " .. label:lower() .. "..."
-    TextBox.Size = UDim2.new(0.7, -10, 0, 30)
+    TextBox.Size = UDim2.new(1, -70, 0, 30) -- Adjusted width for color button
     TextBox.Position = UDim2.new(0, 0, 0, 25)
     TextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
     TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     TextBox.Font = Enum.Font.Gotham
     TextBox.TextSize = 14
+    TextBox.Text = getCurrentName(path)
     TextBox.Parent = Container
 
-    local HexBox = Instance.new("TextBox")
-    HexBox.Name = "HexBox"
-    HexBox.PlaceholderText = "Hex Color"
-    HexBox.Size = UDim2.new(0.3, -10, 0, 30)
-    HexBox.Position = UDim2.new(0.7, 10, 0, 25)
-    HexBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    HexBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HexBox.Font = Enum.Font.Gotham
-    HexBox.TextSize = 14
-    HexBox.Parent = Container
+    local ColorPicker = Instance.new("TextButton")
+    ColorPicker.Name = "ColorPicker"
+    ColorPicker.Text = "Color"
+    ColorPicker.Size = UDim2.new(0, 60, 0, 30)
+    ColorPicker.Position = UDim2.new(1, -60, 0, 25)
+    ColorPicker.BackgroundColor3 = defaultColor or Color3.fromRGB(255, 255, 255)
+    ColorPicker.TextColor3 = Color3.fromRGB(0, 0, 0)
+    ColorPicker.Font = Enum.Font.Gotham
+    ColorPicker.TextSize = 12
+    ColorPicker.Parent = Container
 
-    local ColorPreview = Instance.new("Frame")
-    ColorPreview.Name = "ColorPreview"
-    ColorPreview.Size = UDim2.new(0, 20, 0, 20)
-    ColorPreview.Position = UDim2.new(0.7, -25, 0, 30)
-    ColorPreview.BorderSizePixel = 0
-    ColorPreview.Parent = Container
+    -- Get current color
+    local success, target = pcall(function()
+        return loadstring("return " .. path)()
+    end)
+    
+    if success and target then
+        ColorPicker.BackgroundColor3 = target.TextColor3
+    end
 
     local UICorner = Instance.new("UICorner")
     UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Parent = ColorPicker
+    UICorner = UICorner:Clone()
     UICorner.Parent = TextBox
-    UICorner:Clone().Parent = HexBox
-    UICorner:Clone().Parent = ColorPreview
 
-    return Container, TextBox, HexBox, ColorPreview, index
-end
-
-local fruitEditor, fruitTextBox, fruitHexBox, fruitColorPreview = createPropertyEditor("Fruit Name")
-local mutationEditors = {}
-
-local function updateUI()
-    ContentFrame:ClearAllChildren()
-    mutationEditors = {}
-    
-    local fruitData, mutationData = getFruitData()
-    
-    fruitEditor.Parent = ContentFrame
-    if fruitData.text then
-        fruitTextBox.Text = fruitData.text
-        local hex = string.format("#%02X%02X%02X", math.floor(fruitData.color.r * 255), math.floor(fruitData.color.g * 255), math.floor(fruitData.color.b * 255))
-        fruitHexBox.Text = hex
-        fruitColorPreview.BackgroundColor3 = fruitData.color
-    end
-    
-    for i, mutation in ipairs(mutationData) do
-        local editor, textBox, hexBox, colorPreview = createPropertyEditor("Mutation " .. i, i)
-        editor.Parent = ContentFrame
-        textBox.Text = mutation.text
-        local hex = string.format("#%02X%02X%02X", math.floor(mutation.color.r * 255), math.floor(mutation.color.g * 255), math.floor(mutation.color.b * 255))
-        hexBox.Text = hex
-        colorPreview.BackgroundColor3 = mutation.color
+    -- Apply changes
+    local function applyChanges()
+        local newName = TextBox.Text
+        local newColor = ColorPicker.BackgroundColor3
         
-        table.insert(mutationEditors, {
-            editor = editor,
-            textBox = textBox,
-            hexBox = hexBox,
-            colorPreview = colorPreview,
-            index = i
-        })
-    end
-end
-
-local function saveChanges()
-    local fruitPath = 'game:GetService("Players").LocalPlayer.PlayerGui.FruitMutation_UI.Frame.FruitName'
-    local mutationPath = 'game:GetService("Players").LocalPlayer.PlayerGui.FruitMutation_UI.Frame.FruitMutation'
-    
-    local function parseHex(hex)
-        hex = hex:gsub("#", "")
-        if #hex == 3 then
-            return Color3.fromRGB(
-                tonumber(hex:sub(1,1), 1) * 17,
-                tonumber(hex:sub(2,2), 1) * 17,
-                tonumber(hex:sub(3,3), 1) * 17
-            )
-        elseif #hex == 6 then
-            return Color3.fromRGB(
-                tonumber(hex:sub(1,2), 16),
-                tonumber(hex:sub(3,4), 16),
-                tonumber(hex:sub(5,6), 16)
-            )
-        end
-        return Color3.new(1, 1, 1)
-    end
-    
-    pcall(function()
-        local fruitObj = loadstring("return " .. fruitPath)()
-        if fruitObj then
-            fruitObj.Text = fruitTextBox.Text
-            fruitObj.TextColor3 = parseHex(fruitHexBox.Text)
-        end
-    end)
-    
-    for _, editor in ipairs(mutationEditors) do
+        -- Set the name
+        setName(path, newName)
+        
+        -- Set the color
         pcall(function()
-            local mutationObj = loadstring("return " .. mutationPath .. ":FindFirstChild('Mutation" .. editor.index .. "')")()
-            if mutationObj then
-                mutationObj.Text = editor.textBox.Text
-                mutationObj.TextColor3 = parseHex(editor.hexBox.Text)
+            local obj = loadstring("return " .. path)()
+            if obj then
+                obj.TextColor3 = newColor
             end
         end)
     end
-end
 
-local saveConnection
-SaveButton.MouseButton1Click:Connect(function()
-    if saveConnection then
-        saveConnection:Disconnect()
-        saveConnection = nil
-        SaveButton.Text = "Save"
-    else
-        SaveButton.Text = "Saving..."
-        saveConnection = RunService.Heartbeat:Connect(function()
-            saveChanges()
-        end)
-    end
-end)
-
-RefreshButton.MouseButton1Click:Connect(updateUI)
-
-fruitHexBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local hex = fruitHexBox.Text
-    if hex:match("^#?[0-9a-fA-F]+$") then
-        fruitColorPreview.BackgroundColor3 = Color3.fromHex(hex)
-    end
-end)
-
-for _, editor in ipairs(mutationEditors) do
-    editor.hexBox:GetPropertyChangedSignal("Text"):Connect(function()
-        local hex = editor.hexBox.Text
-        if hex:match("^#?[0-9a-fA-F]+$") then
-            editor.colorPreview.BackgroundColor3 = Color3.fromHex(hex)
+    TextBox.FocusLost:Connect(applyChanges)
+    
+    ColorPicker.MouseButton1Click:Connect(function()
+        local colorPicker = Instance.new("TextButton")
+        colorPicker.Size = UDim2.new(0, 200, 0, 200)
+        colorPicker.Position = UDim2.new(0.5, -100, 0.5, -100)
+        colorPicker.BackgroundColor3 = ColorPicker.BackgroundColor3
+        colorPicker.BorderSizePixel = 0
+        colorPicker.ZIndex = 10
+        colorPicker.Parent = ScreenGui
+        
+        local huePicker = Instance.new("ImageButton")
+        huePicker.Size = UDim2.new(0, 180, 0, 180)
+        huePicker.Position = UDim2.new(0, 10, 0, 10)
+        huePicker.Image = "rbxassetid://2615689005"
+        huePicker.ZIndex = 11
+        huePicker.Parent = colorPicker
+        
+        local UICorner = Instance.new("UICorner")
+        UICorner.CornerRadius = UDim.new(0, 8)
+        UICorner.Parent = colorPicker
+        
+        local closeButton = Instance.new("TextButton")
+        closeButton.Text = "Apply"
+        closeButton.Size = UDim2.new(0, 60, 0, 25)
+        closeButton.Position = UDim2.new(0.5, -30, 1, -30)
+        closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+        closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        closeButton.ZIndex = 11
+        closeButton.Parent = colorPicker
+        
+        local function updateColor(input)
+            local relativeX = (input.Position.X - huePicker.AbsolutePosition.X) / huePicker.AbsoluteSize.X
+            local relativeY = (input.Position.Y - huePicker.AbsolutePosition.Y) / huePicker.AbsoluteSize.Y
+            
+            relativeX = math.clamp(relativeX, 0, 1)
+            relativeY = math.clamp(relativeY, 0, 1)
+            
+            local hue = relativeX
+            local saturation = 1
+            local value = 1 - relativeY
+            
+            local color = Color3.fromHSV(hue, saturation, value)
+            colorPicker.BackgroundColor3 = color
         end
+        
+        huePicker.MouseButton1Down:Connect(function(input)
+            updateColor(input)
+            
+            local connection
+            connection = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    connection:Disconnect()
+                else
+                    updateColor(input)
+                end
+            end)
+        end)
+        
+        closeButton.MouseButton1Click:Connect(function()
+            ColorPicker.BackgroundColor3 = colorPicker.BackgroundColor3
+            colorPicker:Destroy()
+            applyChanges()
+        end)
     end)
+
+    return Container
 end
 
+-- Create editors for each property
+createPropertyEditor("Fruit Name", 'game:GetService("Players").LocalPlayer.PlayerGui.FruitMutation_UI.Frame.FruitName', Color3.fromRGB(0xAA, 0xAA, 0xAA))
+createPropertyEditor("Mutation 1", 'game:GetService("Players").LocalPlayer.PlayerGui.FruitMutation_UI.Frame.FruitMutation', Color3.fromRGB(0xFA, 0xAA, 0x00))
+createPropertyEditor("Mutation 2", 'game:GetService("Players").LocalPlayer.PlayerGui.FruitMutation_UI.Frame.FruitMutation', Color3.fromRGB(0x87, 0xCE, 0xFA))
+
+-- Make draggable
 local dragging
 local dragInput
 local dragStart
@@ -353,9 +294,8 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+-- Reset on character respawn
 LocalPlayer.CharacterAdded:Connect(function()
     ScreenGui:Destroy()
     script:Clone().Parent = LocalPlayer.Backpack
 end)
-
-updateUI()
