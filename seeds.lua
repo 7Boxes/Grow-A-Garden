@@ -7,6 +7,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "SeedAutoBuyer"
 ScreenGui.Parent = PlayerGui
+ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -37,7 +38,7 @@ local TitleText = Instance.new("TextLabel")
 TitleText.Name = "TitleText"
 TitleText.Size = UDim2.new(1, 0, 1, 0)
 TitleText.BackgroundTransparency = 1
-TitleText.Text = "Seed Auto Buyer"
+TitleText.Text = "Jamex Seed Script"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.Font = Enum.Font.GothamBold
 TitleText.TextSize = 14
@@ -156,13 +157,26 @@ local seedButtons = {}
 local selectedSeeds = {}
 local running = false
 local username = LocalPlayer.Name
-local shortUsername = #username > 5 and string.sub(username, -5) or username
+local shortUsername = string.rep("*", #username - 5) .. (#username > 5 and string.sub(username, -5) or username)
+
+-- Format weather name
+local function formatWeatherName(name)
+    local result = ""
+    for i = 1, #name do
+        local c = name:sub(i,i)
+        if i > 1 and c:match("%u") then
+            result = result .. " " .. c
+        else
+            result = result .. c
+        end
+    end
+    return result
+end
 
 -- Update user info
 local function updateUserInfo()
     UsernameText.Text = "User: " .. shortUsername
     
-    -- Find leaderstats and Sheckles
     local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
     if leaderstats then
         local sheckles = leaderstats:FindFirstChild("Sheckles") or leaderstats:FindFirstChild("sheckles")
@@ -178,18 +192,12 @@ local function updateWeather()
     local activeWeather = {}
     
     for _, child in ipairs(weatherFrame:GetChildren()) do
-        if child:IsA("Frame") or child:IsA("ImageButton") then
-            if child.Visible then
-                table.insert(activeWeather, child.Name)
-            end
+        if (child:IsA("Frame") or child:IsA("ImageButton")) and child.Visible then
+            table.insert(activeWeather, formatWeatherName(child.Name))
         end
     end
     
-    if #activeWeather > 0 then
-        WeatherText.Text = "Weather: " .. table.concat(activeWeather, ", ")
-    else
-        WeatherText.Text = "Weather: None"
-    end
+    WeatherText.Text = #activeWeather > 0 and "Weather: " .. table.concat(activeWeather, ", ") or "Weather: None"
 end
 
 -- Get seeds from the shop
@@ -208,13 +216,11 @@ end
 
 -- Create seed buttons
 local function createSeedButtons()
-    -- Clear existing buttons
     for _, button in ipairs(seedButtons) do
         button:Destroy()
     end
     seedButtons = {}
     
-    -- Get seeds and create new buttons
     local seeds = getSeeds()
     table.sort(seeds)
     
@@ -234,7 +240,6 @@ local function createSeedButtons()
         seedCorner.CornerRadius = UDim.new(0, 6)
         seedCorner.Parent = seedButton
         
-        -- Toggle selection
         seedButton.MouseButton1Click:Connect(function()
             if selectedSeeds[seedName] then
                 selectedSeeds[seedName] = nil
@@ -300,6 +305,18 @@ RefreshButton.MouseButton1Click:Connect(function()
     updateUserInfo()
     updateWeather()
 end)
+
+-- Make UI responsive
+local function updateUIScale()
+    local viewportSize = workspace.CurrentCamera.ViewportSize
+    local scale = math.min(1, viewportSize.X / 1200, viewportSize.Y / 800)
+    
+    MainFrame.Size = UDim2.new(0, 300 * scale, 0, 400 * scale)
+    MainFrame.Position = UDim2.new(0.5, -150 * scale, 0.5, -200 * scale)
+end
+
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateUIScale)
+updateUIScale()
 
 -- Initialize
 createSeedButtons()
