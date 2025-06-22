@@ -3,20 +3,29 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local TeleportUI = PlayerGui:WaitForChild("Teleport_UI"):WaitForChild("Frame")
-local SeedShopUI = PlayerGui:WaitForChild("Seed_Shop"):WaitForChild("Frame"):WaitForChild("ScrollingFrame")
-local BottomUI = PlayerGui:WaitForChild("Bottom_UI"):WaitForChild("BottomFrame"):WaitForChild("Holder"):WaitForChild("List")
+local BuyPlants = {
+    "Green Apple",
+    "Avocado",
+    "Banana",
+    "Pineapple",
+    "Kiwi",
+    "Bell Pepper",
+    "Prickly Pear",
+    "Loquat",
+    "Sugar Apple",
+    "Feijoa"
+}
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "JamexSeedScript"
+ScreenGui.Name = "JamexStats"
 ScreenGui.Parent = PlayerGui
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 200, 0, 120)
-MainFrame.Position = UDim2.new(0.5, -100, 0, 10)
-MainFrame.AnchorPoint = Vector2.new(0.5, 0)
+MainFrame.Size = UDim2.new(0, 200, 0, 150)
+MainFrame.Position = UDim2.new(0.75, -100, 0.5, -75)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
@@ -25,12 +34,12 @@ local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(0, 8)
 Corner.Parent = MainFrame
 
-local UserInfo = Instance.new("Frame")
-UserInfo.Name = "UserInfo"
-UserInfo.Size = UDim2.new(1, -10, 0, 40)
-UserInfo.Position = UDim2.new(0, 5, 0, 5)
-UserInfo.BackgroundTransparency = 1
-UserInfo.Parent = MainFrame
+local StatsFrame = Instance.new("Frame")
+StatsFrame.Name = "StatsFrame"
+StatsFrame.Size = UDim2.new(1, -10, 1, -10)
+StatsFrame.Position = UDim2.new(0, 5, 0, 5)
+StatsFrame.BackgroundTransparency = 1
+StatsFrame.Parent = MainFrame
 
 local UsernameText = Instance.new("TextLabel")
 UsernameText.Name = "UsernameText"
@@ -41,7 +50,7 @@ UsernameText.TextColor3 = Color3.fromRGB(200, 200, 200)
 UsernameText.Font = Enum.Font.Gotham
 UsernameText.TextSize = 12
 UsernameText.TextXAlignment = Enum.TextXAlignment.Left
-UsernameText.Parent = UserInfo
+UsernameText.Parent = StatsFrame
 
 local ShecklesText = Instance.new("TextLabel")
 ShecklesText.Name = "ShecklesText"
@@ -53,7 +62,7 @@ ShecklesText.TextColor3 = Color3.fromRGB(255, 215, 0)
 ShecklesText.Font = Enum.Font.GothamBold
 ShecklesText.TextSize = 12
 ShecklesText.TextXAlignment = Enum.TextXAlignment.Left
-ShecklesText.Parent = UserInfo
+ShecklesText.Parent = StatsFrame
 
 local WeatherText = Instance.new("TextLabel")
 WeatherText.Name = "WeatherText"
@@ -65,79 +74,24 @@ WeatherText.TextColor3 = Color3.fromRGB(200, 200, 200)
 WeatherText.Font = Enum.Font.Gotham
 WeatherText.TextSize = 12
 WeatherText.TextXAlignment = Enum.TextXAlignment.Left
-WeatherText.Parent = UserInfo
+WeatherText.Parent = StatsFrame
 
-local ControlFrame = Instance.new("Frame")
-ControlFrame.Name = "ControlFrame"
-ControlFrame.Size = UDim2.new(1, -10, 0, 70)
-ControlFrame.Position = UDim2.new(0, 5, 0, 50)
-ControlFrame.BackgroundTransparency = 1
-ControlFrame.Parent = MainFrame
+local PetsText = Instance.new("TextLabel")
+PetsText.Name = "PetsText"
+PetsText.Size = UDim2.new(1, 0, 0, 60)
+PetsText.Position = UDim2.new(0, 0, 0, 45)
+PetsText.BackgroundTransparency = 1
+PetsText.Text = "Pets: None"
+PetsText.TextColor3 = Color3.fromRGB(200, 200, 200)
+PetsText.Font = Enum.Font.Gotham
+PetsText.TextSize = 12
+PetsText.TextXAlignment = Enum.TextXAlignment.Left
+PetsText.TextYAlignment = Enum.TextYAlignment.Top
+PetsText.Parent = StatsFrame
 
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Size = UDim2.new(1, 0, 0, 20)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.Font = Enum.Font.Gotham
-ToggleButton.TextSize = 12
-ToggleButton.Text = "Start"
-ToggleButton.Parent = ControlFrame
-
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 6)
-ToggleCorner.Parent = ToggleButton
-
-local RefreshButton = Instance.new("TextButton")
-RefreshButton.Name = "RefreshButton"
-RefreshButton.Size = UDim2.new(1, 0, 0, 20)
-RefreshButton.Position = UDim2.new(0, 0, 0, 25)
-RefreshButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-RefreshButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-RefreshButton.Font = Enum.Font.Gotham
-RefreshButton.TextSize = 12
-RefreshButton.Text = "Refresh"
-RefreshButton.Parent = ControlFrame
-
-local RefreshCorner = Instance.new("UICorner")
-RefreshCorner.CornerRadius = UDim.new(0, 6)
-RefreshCorner.Parent = RefreshButton
-
-local DropdownToggle = Instance.new("TextButton")
-DropdownToggle.Name = "DropdownToggle"
-DropdownToggle.Size = UDim2.new(1, 0, 0, 20)
-DropdownToggle.Position = UDim2.new(0, 0, 0, 50)
-DropdownToggle.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-DropdownToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-DropdownToggle.Font = Enum.Font.Gotham
-DropdownToggle.TextSize = 12
-DropdownToggle.Text = "Toggle Dropdown"
-DropdownToggle.Parent = TeleportUI
-
-local DropdownCorner = Instance.new("UICorner")
-DropdownCorner.CornerRadius = UDim.new(0, 6)
-DropdownCorner.Parent = DropdownToggle
-
-local StatsToggle = Instance.new("TextButton")
-StatsToggle.Name = "StatsToggle"
-StatsToggle.Size = UDim2.new(0, 100, 0, 20)
-StatsToggle.Position = UDim2.new(0, 10, 0, 10)
-StatsToggle.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-StatsToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatsToggle.Font = Enum.Font.Gotham
-StatsToggle.TextSize = 12
-StatsToggle.Text = "Toggle Stats"
-StatsToggle.Parent = TeleportUI
-
-local StatsCorner = Instance.new("UICorner")
-StatsCorner.CornerRadius = UDim.new(0, 6)
-StatsCorner.Parent = StatsToggle
-
-local seedButtons = {}
-local selectedSeeds = {}
-local running = false
 local username = LocalPlayer.Name
 local shortUsername = string.rep("*", #username - 5) .. (#username > 5 and string.sub(username, -5) or username)
+local running = true
 
 local function formatWeatherName(name)
     local result = ""
@@ -164,6 +118,7 @@ local function updateUserInfo()
 end
 
 local function updateWeather()
+    local BottomUI = PlayerGui:WaitForChild("Bottom_UI"):WaitForChild("BottomFrame"):WaitForChild("Holder"):WaitForChild("List")
     local activeWeather = {}
     for _, child in ipairs(BottomUI:GetChildren()) do
         if (child:IsA("Frame") or child:IsA("ImageButton")) and child.Visible then
@@ -173,69 +128,54 @@ local function updateWeather()
     WeatherText.Text = #activeWeather > 0 and "Weather: " .. table.concat(activeWeather, ", ") or "Weather: None"
 end
 
-local function getSeeds()
-    local seeds = {}
-    for _, child in ipairs(SeedShopUI:GetChildren()) do
-        if not string.find(child.Name, "_") and not string.find(child.Name:upper(), "UI") then
-            table.insert(seeds, child.Name)
+local function updatePets()
+    local ActivePetUI = PlayerGui:WaitForChild("ActivePetUI")
+    if not ActivePetUI then return end
+    
+    local Frame = ActivePetUI:WaitForChild("Frame")
+    if not Frame then return end
+    
+    local Main = Frame:WaitForChild("Main")
+    if not Main then return end
+    
+    local ScrollingFrame = Main:WaitForChild("ScrollingFrame")
+    if not ScrollingFrame then return end
+    
+    local pets = {}
+    for _, child in ipairs(ScrollingFrame:GetChildren()) do
+        if string.find(child.Name, "{") == 1 then
+            local petType = child:FindFirstChild("PET_TYPE")
+            local petName = child:FindFirstChild("PET_NAME")
+            local petAge = child:FindFirstChild("PET_AGE")
+            
+            if petType and petName and petAge then
+                table.insert(pets, petType.Text .. ": " .. petName.Text .. " (" .. petAge.Text .. ")")
+            end
         end
     end
-    return seeds
-end
-
-local function createSeedButtons()
-    for _, button in ipairs(seedButtons) do
-        button:Destroy()
-    end
-    seedButtons = {}
-    local seeds = getSeeds()
-    table.sort(seeds)
-    for _, seedName in ipairs(seeds) do
-        local seedButton = Instance.new("TextButton")
-        seedButton.Name = seedName .. "Button"
-        seedButton.Size = UDim2.new(1, 0, 0, 30)
-        seedButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        seedButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        seedButton.Font = Enum.Font.Gotham
-        seedButton.TextSize = 12
-        seedButton.Text = seedName
-        seedButton.AutoButtonColor = false
-        seedButton.Parent = MainFrame
-        local seedCorner = Instance.new("UICorner")
-        seedCorner.CornerRadius = UDim.new(0, 6)
-        seedCorner.Parent = seedButton
-        seedButton.MouseButton1Click:Connect(function()
-            if selectedSeeds[seedName] then
-                selectedSeeds[seedName] = nil
-                seedButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-            else
-                selectedSeeds[seedName] = true
-                seedButton.BackgroundColor3 = Color3.fromRGB(80, 120, 80)
-            end
-        end)
-        table.insert(seedButtons, seedButton)
-    end
+    
+    PetsText.Text = #pets > 0 and "Pets:\n" .. table.concat(pets, "\n") or "Pets: None"
 end
 
 local function buySeeds()
     local buySeedEvent = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("BuySeedStock")
     while running do
-        for seedName, _ in pairs(selectedSeeds) do
+        for _, seedName in ipairs(BuyPlants) do
             if not running then break end
             for i = 1, 5 do
                 if not running then break end
                 buySeedEvent:FireServer(seedName)
-                wait(0.5)
+                task.wait(0.5)
             end
         end
         if not running then break end
-        wait(1)
+        task.wait(1)
     end
 end
 
 local function buyTrowelLoop()
     while true do
-        wait(60)
+        task.wait(60)
         if running then
             local buyGearEvent = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("BuyGearStock")
             buyGearEvent:FireServer("Trowel")
@@ -243,39 +183,12 @@ local function buyTrowelLoop()
     end
 end
 
-ToggleButton.MouseButton1Click:Connect(function()
-    running = not running
-    if running then
-        ToggleButton.Text = "Stop"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(120, 80, 80)
-        spawn(buySeeds)
-    else
-        ToggleButton.Text = "Start"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    end
-end)
-
-RefreshButton.MouseButton1Click:Connect(function()
-    createSeedButtons()
-    updateUserInfo()
-    updateWeather()
-end)
-
-DropdownToggle.MouseButton1Click:Connect(function()
-    TeleportUI.Visible = not TeleportUI.Visible
-end)
-
-StatsToggle.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
-
-createSeedButtons()
-updateUserInfo()
-updateWeather()
+spawn(buySeeds)
 spawn(buyTrowelLoop)
 
 while true do
-    wait(5)
     updateUserInfo()
     updateWeather()
+    updatePets()
+    task.wait(5)
 end
