@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Backpack = LocalPlayer:WaitForChild("Backpack")
+local UserInputService = game:GetService("UserInputService")
 
 local BuyPlants = {
     "Green Apple",
@@ -18,16 +19,17 @@ local BuyPlants = {
 }
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "JamexStats"
+ScreenGui.Name = "JamexProfessionalUI"
 ScreenGui.Parent = PlayerGui
 ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 400, 0, 300)
-MainFrame.Position = UDim2.new(0.75, -200, 0.5, -150)
+MainFrame.Size = UDim2.new(1, -20, 1, -20)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
@@ -35,23 +37,99 @@ local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(0, 8)
 Corner.Parent = MainFrame
 
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 30)
+TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 8)
+TopBarCorner.Parent = TopBar
+
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(0.5, 0, 1, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "JAMEX FARMING SUITE"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 100, 1, 0)
+MinimizeButton.Position = UDim2.new(1, -100, 0, 0)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.Font = Enum.Font.Gotham
+MinimizeButton.TextSize = 12
+MinimizeButton.Text = "Minimize"
+MinimizeButton.Parent = TopBar
+
+local MinimizeCorner = Instance.new("UICorner")
+MinimizeCorner.CornerRadius = UDim.new(0, 8)
+MinimizeCorner.Parent = MinimizeButton
+
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, -20, 1, -50)
+ContentFrame.Position = UDim2.new(0, 10, 0, 40)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
 local StatsFrame = Instance.new("Frame")
 StatsFrame.Name = "StatsFrame"
-StatsFrame.Size = UDim2.new(0.5, -5, 1, -10)
-StatsFrame.Position = UDim2.new(0, 5, 0, 5)
-StatsFrame.BackgroundTransparency = 1
-StatsFrame.Parent = MainFrame
+StatsFrame.Size = UDim2.new(0.3, -10, 1, 0)
+StatsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+StatsFrame.Parent = ContentFrame
+
+local StatsCorner = Instance.new("UICorner")
+StatsCorner.CornerRadius = UDim.new(0, 8)
+StatsCorner.Parent = StatsFrame
+
+local StatsScroll = Instance.new("ScrollingFrame")
+StatsScroll.Name = "StatsScroll"
+StatsScroll.Size = UDim2.new(1, 0, 1, 0)
+StatsScroll.BackgroundTransparency = 1
+StatsScroll.ScrollBarThickness = 5
+StatsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+StatsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+StatsScroll.Parent = StatsFrame
+
+local StatsLayout = Instance.new("UIListLayout")
+StatsLayout.Name = "StatsLayout"
+StatsLayout.Padding = UDim.new(0, 10)
+StatsLayout.Parent = StatsScroll
 
 local LogsFrame = Instance.new("Frame")
 LogsFrame.Name = "LogsFrame"
-LogsFrame.Size = UDim2.new(0.5, -5, 1, -10)
-LogsFrame.Position = UDim2.new(0.5, 0, 0, 5)
-LogsFrame.BackgroundTransparency = 1
-LogsFrame.Parent = MainFrame
+LogsFrame.Size = UDim2.new(0.7, -10, 0.5, -5)
+LogsFrame.Position = UDim2.new(0.3, 10, 0, 0)
+LogsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+LogsFrame.Parent = ContentFrame
+
+local LogsCorner = Instance.new("UICorner")
+LogsCorner.CornerRadius = UDim.new(0, 8)
+LogsCorner.Parent = LogsFrame
+
+local LogsTitle = Instance.new("TextLabel")
+LogsTitle.Name = "LogsTitle"
+LogsTitle.Size = UDim2.new(1, 0, 0, 30)
+LogsTitle.BackgroundTransparency = 1
+LogsTitle.Text = "PURCHASE LOGS"
+LogsTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+LogsTitle.Font = Enum.Font.GothamBold
+LogsTitle.TextSize = 14
+LogsTitle.Parent = LogsFrame
 
 local LogsScroll = Instance.new("ScrollingFrame")
 LogsScroll.Name = "LogsScroll"
-LogsScroll.Size = UDim2.new(1, 0, 1, 0)
+LogsScroll.Size = UDim2.new(1, -10, 1, -40)
+LogsScroll.Position = UDim2.new(0, 5, 0, 35)
 LogsScroll.BackgroundTransparency = 1
 LogsScroll.ScrollBarThickness = 5
 LogsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -63,117 +141,88 @@ LogsLayout.Name = "LogsLayout"
 LogsLayout.Padding = UDim.new(0, 5)
 LogsLayout.Parent = LogsScroll
 
-local UsernameText = Instance.new("TextLabel")
-UsernameText.Name = "UsernameText"
-UsernameText.Size = UDim2.new(1, 0, 0, 15)
-UsernameText.BackgroundTransparency = 1
-UsernameText.Text = "User: ..."
-UsernameText.TextColor3 = Color3.fromRGB(200, 200, 200)
-UsernameText.Font = Enum.Font.Gotham
-UsernameText.TextSize = 12
-UsernameText.TextXAlignment = Enum.TextXAlignment.Left
-UsernameText.Parent = StatsFrame
+local PetsFrame = Instance.new("Frame")
+PetsFrame.Name = "PetsFrame"
+PetsFrame.Size = UDim2.new(0.7, -10, 0.5, -5)
+PetsFrame.Position = UDim2.new(0.3, 10, 0.5, 5)
+PetsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+PetsFrame.Parent = ContentFrame
 
-local ShecklesText = Instance.new("TextLabel")
-ShecklesText.Name = "ShecklesText"
-ShecklesText.Size = UDim2.new(1, 0, 0, 15)
-ShecklesText.Position = UDim2.new(0, 0, 0, 15)
-ShecklesText.BackgroundTransparency = 1
-ShecklesText.Text = "¢0"
-ShecklesText.TextColor3 = Color3.fromRGB(255, 215, 0)
-ShecklesText.Font = Enum.Font.GothamBold
-ShecklesText.TextSize = 12
-ShecklesText.TextXAlignment = Enum.TextXAlignment.Left
-ShecklesText.Parent = StatsFrame
+local PetsCorner = Instance.new("UICorner")
+PetsCorner.CornerRadius = UDim.new(0, 8)
+PetsCorner.Parent = PetsFrame
 
-local WeatherText = Instance.new("TextLabel")
-WeatherText.Name = "WeatherText"
-WeatherText.Size = UDim2.new(1, 0, 0, 15)
-WeatherText.Position = UDim2.new(0, 0, 0, 30)
-WeatherText.BackgroundTransparency = 1
-WeatherText.Text = "Weather: None"
-WeatherText.TextColor3 = Color3.fromRGB(200, 200, 200)
-WeatherText.Font = Enum.Font.Gotham
-WeatherText.TextSize = 12
-WeatherText.TextXAlignment = Enum.TextXAlignment.Left
-WeatherText.Parent = StatsFrame
+local PetsTitle = Instance.new("TextLabel")
+PetsTitle.Name = "PetsTitle"
+PetsTitle.Size = UDim2.new(1, 0, 0, 30)
+PetsTitle.BackgroundTransparency = 1
+PetsTitle.Text = "PET STATUS"
+PetsTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+PetsTitle.Font = Enum.Font.GothamBold
+PetsTitle.TextSize = 14
+PetsTitle.Parent = PetsFrame
 
-local SeedsText = Instance.new("TextLabel")
-SeedsText.Name = "SeedsText"
-SeedsText.Size = UDim2.new(1, 0, 0, 15)
-SeedsText.Position = UDim2.new(0, 0, 0, 45)
-SeedsText.BackgroundTransparency = 1
-SeedsText.Text = "Seeds: 0"
-SeedsText.TextColor3 = Color3.fromRGB(200, 200, 200)
-SeedsText.Font = Enum.Font.Gotham
-SeedsText.TextSize = 12
-SeedsText.TextXAlignment = Enum.TextXAlignment.Left
-SeedsText.Parent = StatsFrame
+local PetsScroll = Instance.new("ScrollingFrame")
+PetsScroll.Name = "PetsScroll"
+PetsScroll.Size = UDim2.new(1, -10, 1, -40)
+PetsScroll.Position = UDim2.new(0, 5, 0, 35)
+PetsScroll.BackgroundTransparency = 1
+PetsScroll.ScrollBarThickness = 5
+PetsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+PetsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+PetsScroll.Parent = PetsFrame
 
-local PlantsText = Instance.new("TextLabel")
-PlantsText.Name = "PlantsText"
-PlantsText.Size = UDim2.new(1, 0, 0, 15)
-PlantsText.Position = UDim2.new(0, 0, 0, 60)
-PlantsText.BackgroundTransparency = 1
-PlantsText.Text = "Plants: 0"
-PlantsText.TextColor3 = Color3.fromRGB(200, 200, 200)
-PlantsText.Font = Enum.Font.Gotham
-PlantsText.TextSize = 12
-PlantsText.TextXAlignment = Enum.TextXAlignment.Left
-PlantsText.Parent = StatsFrame
+local PetsLayout = Instance.new("UIListLayout")
+PetsLayout.Name = "PetsLayout"
+PetsLayout.Padding = UDim.new(0, 5)
+PetsLayout.Parent = PetsScroll
 
-local PetsText = Instance.new("TextLabel")
-PetsText.Name = "PetsText"
-PetsText.Size = UDim2.new(1, 0, 0, 60)
-PetsText.Position = UDim2.new(0, 0, 0, 75)
-PetsText.BackgroundTransparency = 1
-PetsText.Text = "Pets: None"
-PetsText.TextColor3 = Color3.fromRGB(200, 200, 200)
-PetsText.Font = Enum.Font.Gotham
-PetsText.TextSize = 12
-PetsText.TextXAlignment = Enum.TextXAlignment.Left
-PetsText.TextYAlignment = Enum.TextYAlignment.Top
-PetsText.Parent = StatsFrame
+local function createStatLabel(name)
+    local frame = Instance.new("Frame")
+    frame.Name = name .. "Frame"
+    frame.Size = UDim2.new(1, 0, 0, 20)
+    frame.BackgroundTransparency = 1
+    
+    local label = Instance.new("TextLabel")
+    label.Name = name .. "Label"
+    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name .. ":"
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    
+    local value = Instance.new("TextLabel")
+    value.Name = name .. "Value"
+    value.Size = UDim2.new(0.5, 0, 1, 0)
+    value.Position = UDim2.new(0.5, 0, 0, 0)
+    value.BackgroundTransparency = 1
+    value.Text = "0"
+    value.TextColor3 = Color3.fromRGB(255, 255, 255)
+    value.Font = Enum.Font.GothamBold
+    value.TextSize = 12
+    value.TextXAlignment = Enum.TextXAlignment.Right
+    value.Parent = frame
+    
+    frame.Parent = StatsScroll
+    return value
+end
 
-local TimeText = Instance.new("TextLabel")
-TimeText.Name = "TimeText"
-TimeText.Size = UDim2.new(1, 0, 0, 15)
-TimeText.Position = UDim2.new(0, 0, 0, 135)
-TimeText.BackgroundTransparency = 1
-TimeText.Text = "Time: 0s"
-TimeText.TextColor3 = Color3.fromRGB(200, 200, 200)
-TimeText.Font = Enum.Font.Gotham
-TimeText.TextSize = 12
-TimeText.TextXAlignment = Enum.TextXAlignment.Left
-TimeText.Parent = StatsFrame
-
-local SeedsBoughtText = Instance.new("TextLabel")
-SeedsBoughtText.Name = "SeedsBoughtText"
-SeedsBoughtText.Size = UDim2.new(1, 0, 0, 15)
-SeedsBoughtText.Position = UDim2.new(0, 0, 0, 150)
-SeedsBoughtText.BackgroundTransparency = 1
-SeedsBoughtText.Text = "Bought: 0"
-SeedsBoughtText.TextColor3 = Color3.fromRGB(200, 200, 200)
-SeedsBoughtText.Font = Enum.Font.Gotham
-SeedsBoughtText.TextSize = 12
-SeedsBoughtText.TextXAlignment = Enum.TextXAlignment.Left
-SeedsBoughtText.Parent = StatsFrame
-
-local MoneySpentText = Instance.new("TextLabel")
-MoneySpentText.Name = "MoneySpentText"
-MoneySpentText.Size = UDim2.new(1, 0, 0, 15)
-MoneySpentText.Position = UDim2.new(0, 0, 0, 165)
-MoneySpentText.BackgroundTransparency = 1
-MoneySpentText.Text = "Spent: ¢0"
-MoneySpentText.TextColor3 = Color3.fromRGB(200, 200, 200)
-MoneySpentText.Font = Enum.Font.Gotham
-MoneySpentText.TextSize = 12
-MoneySpentText.TextXAlignment = Enum.TextXAlignment.Left
-MoneySpentText.Parent = StatsFrame
+local UsernameValue = createStatLabel("User")
+local ShecklesValue = createStatLabel("Sheckles")
+local WeatherValue = createStatLabel("Weather")
+local SeedsValue = createStatLabel("Seeds")
+local PlantsValue = createStatLabel("Plants")
+local TimeValue = createStatLabel("Runtime")
+local BoughtValue = createStatLabel("Bought")
+local SpentValue = createStatLabel("Spent")
 
 local username = LocalPlayer.Name
 local shortUsername = string.rep("*", #username - 5) .. (#username > 5 and string.sub(username, -5) or username)
 local running = true
+local minimized = false
 local startTime = os.time()
 local totalSeedsBought = 0
 local totalMoneySpent = 0
@@ -206,10 +255,10 @@ end
 local function addLog(message)
     local logText = Instance.new("TextLabel")
     logText.Name = "LogText"
-    logText.Size = UDim2.new(1, 0, 0, 15)
+    logText.Size = UDim2.new(1, 0, 0, 20)
     logText.BackgroundTransparency = 1
-    logText.Text = message
-    logText.TextColor3 = Color3.fromRGB(255, 100, 100)
+    logText.Text = "> " .. message
+    logText.TextColor3 = Color3.fromRGB(255, 120, 120)
     logText.Font = Enum.Font.Gotham
     logText.TextSize = 12
     logText.TextXAlignment = Enum.TextXAlignment.Left
@@ -221,10 +270,24 @@ local function addLog(message)
     end
 end
 
+local function addPet(petInfo)
+    local petText = Instance.new("TextLabel")
+    petText.Name = "PetText"
+    petText.Size = UDim2.new(1, 0, 0, 20)
+    petText.BackgroundTransparency = 1
+    petText.Text = petInfo
+    petText.TextColor3 = Color3.fromRGB(200, 200, 255)
+    petText.Font = Enum.Font.Gotham
+    petText.TextSize = 12
+    petText.TextXAlignment = Enum.TextXAlignment.Left
+    petText.TextYAlignment = Enum.TextYAlignment.Top
+    petText.Parent = PetsScroll
+end
+
 local function updateUserInfo()
-    UsernameText.Text = "User: " .. shortUsername
+    UsernameValue.Text = shortUsername
     local currentSheckles = getSheckles()
-    ShecklesText.Text = "¢" .. tostring(currentSheckles)
+    ShecklesValue.Text = "¢" .. tostring(currentSheckles)
     lastSheckles = currentSheckles
 end
 
@@ -236,7 +299,7 @@ local function updateWeather()
             table.insert(activeWeather, formatWeatherName(child.Name))
         end
     end
-    WeatherText.Text = #activeWeather > 0 and "Weather: " .. table.concat(activeWeather, ", ") or "Weather: None"
+    WeatherValue.Text = #activeWeather > 0 and table.concat(activeWeather, ", ") or "None"
 end
 
 local function updateInventory()
@@ -256,22 +319,40 @@ local function updateInventory()
         end
     end
     
-    SeedsText.Text = "Seeds: " .. seedCount
-    PlantsText.Text = "Plants: " .. plantCount
+    SeedsValue.Text = seedCount
+    PlantsValue.Text = plantCount
 end
 
 local function updatePets()
+    for _, child in ipairs(PetsScroll:GetChildren()) do
+        if child:IsA("TextLabel") then
+            child:Destroy()
+        end
+    end
+    
     local ActivePetUI = PlayerGui:FindFirstChild("ActivePetUI")
-    if not ActivePetUI then return end
+    if not ActivePetUI then
+        addPet("No pets active")
+        return
+    end
     
     local Frame = ActivePetUI:FindFirstChild("Frame")
-    if not Frame then return end
+    if not Frame then
+        addPet("No pets active")
+        return
+    end
     
     local Main = Frame:FindFirstChild("Main")
-    if not Main then return end
+    if not Main then
+        addPet("No pets active")
+        return
+    end
     
     local ScrollingFrame = Main:FindFirstChild("ScrollingFrame")
-    if not ScrollingFrame then return end
+    if not ScrollingFrame then
+        addPet("No pets active")
+        return
+    end
     
     local pets = {}
     for _, child in ipairs(ScrollingFrame:GetChildren()) do
@@ -281,19 +362,34 @@ local function updatePets()
             local petAge = child:FindFirstChild("PET_AGE")
             
             if petType and petName and petAge then
-                table.insert(pets, petType.Text .. ": " .. petName.Text .. " (" .. petAge.Text .. ")")
+                addPet(petType.Text .. ": " .. petName.Text .. " (" .. petAge.Text .. ")")
             end
         end
     end
     
-    PetsText.Text = #pets > 0 and "Pets:\n" .. table.concat(pets, "\n") or "Pets: None"
+    if #PetsScroll:GetChildren() == 1 then
+        addPet("No pets active")
+    end
 end
 
 local function updateStats()
-    TimeText.Text = "Time: " .. os.time() - startTime .. "s"
-    SeedsBoughtText.Text = "Bought: " .. totalSeedsBought
-    MoneySpentText.Text = "Spent: ¢" .. totalMoneySpent
+    TimeValue.Text = os.time() - startTime .. "s"
+    BoughtValue.Text = totalSeedsBought
+    SpentValue.Text = "¢" .. totalMoneySpent
 end
+
+local function toggleUI()
+    minimized = not minimized
+    if minimized then
+        MainFrame.Visible = false
+        MinimizeButton.Text = "Maximize"
+    else
+        MainFrame.Visible = true
+        MinimizeButton.Text = "Minimize"
+    end
+end
+
+MinimizeButton.MouseButton1Click:Connect(toggleUI)
 
 local function buyItem(itemName, isSeed)
     local buyEvent = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild(isSeed and "BuySeedStock" or "BuyGearStock")
@@ -347,6 +443,15 @@ local function buyTrowelLoop()
         end
     end
 end
+
+local function handleResize()
+    local viewportSize = workspace.CurrentCamera.ViewportSize
+    local padding = math.min(20, viewportSize.X * 0.02, viewportSize.Y * 0.02)
+    MainFrame.Size = UDim2.new(1, -padding * 2, 1, -padding * 2)
+end
+
+handleResize()
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(handleResize)
 
 spawn(buySeeds)
 spawn(buyTrowelLoop)
