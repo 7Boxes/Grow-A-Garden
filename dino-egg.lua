@@ -1,7 +1,5 @@
--- Load Rayfield Library
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Create Window with configuration saving
 local Window = Rayfield:CreateWindow({
    Name = "JMXScript - Dino DNA Lab",
    LoadingTitle = "JMXScript is loading...",
@@ -14,17 +12,14 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false,
 })
 
--- Create main tab
-local MainTab = Window:CreateTab("Main", "dna") -- Using DNA icon from Lucide
+local MainTab = Window:CreateTab("Main", "dna")
 
--- Stats variables
 local stats = {
     petsUsed = 0,
     eggsGained = 0,
     lastPosition = nil
 }
 
--- Load saved stats
 if Rayfield:LoadConfiguration() then
     local config = Rayfield.Flags
     stats.petsUsed = config.PetsUsed.CurrentValue or 0
@@ -32,19 +27,15 @@ if Rayfield:LoadConfiguration() then
     stats.lastPosition = config.LastPosition.CurrentValue or nil
 end
 
--- Player references
 local player = game:GetService("Players").LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = char:WaitForChild("HumanoidRootPart")
 
--- Get remotes
 local function getRemote(name)
     local remote
     local attempts = 0
     repeat
-        remote = game:GetService("ReplicatedStorage")
-            :WaitForChild("GameEvents")
-            :FindFirstChild(name)
+        remote = game:GetService("ReplicatedStorage"):WaitForChild("GameEvents"):FindFirstChild(name)
         if not remote then wait(1) end
         attempts = attempts + 1
     until remote or attempts >= 5
@@ -54,7 +45,6 @@ end
 local interactRemote = getRemote("DinoMachineService_RE")
 local claimRemote = getRemote("DinoMachineService_RE")
 
--- Get all unique pet names from backpack
 local function getPetNames()
     local backpack = player:WaitForChild("Backpack")
     local petNames = {}
@@ -75,7 +65,6 @@ local function getPetNames()
                     age = age
                 })
             else
-                -- Update if this pet has lower age/weight
                 for _, pet in ipairs(petDetails) do
                     if pet.name == cleanName then
                         if age < pet.age or (age == pet.age and weight < pet.weight) then
@@ -93,16 +82,13 @@ local function getPetNames()
     return petDetails
 end
 
--- Create UI elements
 local selectedPets = {}
 local grindEnabled = false
 
--- Stats display
 local StatsSection = MainTab:CreateSection("Statistics")
 local PetsUsedLabel = MainTab:CreateLabel("Pets Used: "..stats.petsUsed)
 local EggsGainedLabel = MainTab:CreateLabel("Eggs Gained: "..stats.eggsGained)
 
--- Pet selection dropdown
 local petOptions = {}
 local petList = getPetNames()
 for _, pet in ipairs(petList) do
@@ -120,7 +106,6 @@ local PetDropdown = MainTab:CreateDropdown({
    end,
 })
 
--- Position section
 local PositionSection = MainTab:CreateSection("Position")
 local SetPositionButton = MainTab:CreateButton({
    Name = "Save Current Position",
@@ -158,7 +143,6 @@ local TeleportButton = MainTab:CreateButton({
    end,
 })
 
--- Grind toggle
 local GrindToggle = MainTab:CreateToggle({
    Name = "Grind Dino Eggs",
    CurrentValue = false,
@@ -183,7 +167,6 @@ local GrindToggle = MainTab:CreateToggle({
    end,
 })
 
--- Main function
 local function processPet()
     if not grindEnabled then return end
     if #selectedPets == 0 then
@@ -196,7 +179,6 @@ local function processPet()
         return
     end
     
-    -- Get all pets that match selection
     local eligiblePets = {}
     local petList = getPetNames()
     
@@ -211,25 +193,21 @@ local function processPet()
     
     if #eligiblePets == 0 then return end
     
-    -- Select random pet from eligible ones
     local selectedPet = eligiblePets[math.random(1, #eligiblePets)]
-    
-    -- Equip pet
     local humanoid = char:FindFirstChildOfClass("Humanoid")
+    
     if humanoid then
-        -- Unequip any current tool
         for _, tool in ipairs(char:GetChildren()) do
             if tool:IsA("Tool") then
                 tool.Parent = player.Backpack
             end
         end
         
-        -- Clone and equip the pet
-        local tool = selectedPet.object:Clone()
-        tool.Parent = char
-        humanoid:EquipTool(tool)
+        selectedPet.object.Parent = char
+        humanoid:EquipTool(selectedPet.object)
         
-        -- Fire interact remote
+        wait(1)
+        
         if interactRemote then
             interactRemote:FireServer("MachineInteract")
             stats.petsUsed = stats.petsUsed + 1
@@ -244,7 +222,6 @@ local function processPet()
             })
         end
         
-        -- Check for egg increase
         local initialEggCount = 0
         for _, item in ipairs(player.Backpack:GetChildren()) do
             if item.Name:find("Dinosaur Egg") then
@@ -253,9 +230,8 @@ local function processPet()
             end
         end
         
-        -- Wait and claim reward
         spawn(function()
-            wait(3600) -- Wait 1 hour
+            wait(3600)
             
             if claimRemote then
                 repeat
@@ -288,7 +264,6 @@ local function processPet()
     end
 end
 
--- Auto-refresh pet list every minute
 spawn(function()
     while true do
         wait(60)
@@ -301,7 +276,6 @@ spawn(function()
     end
 end)
 
--- Main loop
 spawn(function()
     while true do
         if grindEnabled then
@@ -313,5 +287,4 @@ spawn(function()
     end
 end)
 
--- Load configuration
 Rayfield:LoadConfiguration()
