@@ -1,19 +1,30 @@
 local HttpService = game:GetService("HttpService")
 local DataService = require(game:GetService("ReplicatedStorage").Modules.DataService)
+local bit32 = require("bit32")
 
 local WebhookURL = "https://discord.com/api/webhooks/1401012390140710996/XBUD3c1lFUAqGU8xNoFh9Y5drOampi3JQJK1thWyH_1Zed4E8KA2_jqanuo02ILy3b3t"
 local LOG_FILE = "SeedShopLog.txt"
+
+-- Full list of all possible seeds in the game
+local ALL_SEEDS = {
+    "Carrot", "Strawberry", "Blueberry", "Orange Tulip", "Tomato", 
+    "Corn", "Daffodil", "Watermelon", "Pumpkin", "Apple", "Bamboo", 
+    "Coconut", "Cactus", "Dragon Fruit", "Mango", "Grape", "Mushroom", 
+    "Pepper", "Cacao", "Beanstalk", "Ember Lily", "Sugar Apple", 
+    "Burning Bud", "Giant Pinecone", "Elder Strawberry"
+}
 
 local DATA_HISTORY = {}
 local ANALYZER = {
     last_seed = nil,
     seed_deltas = {},
-    item_patterns = {}, -- Tracks item appearance patterns
-    seed_to_items = {}, -- Maps seeds to items that appeared
+    item_patterns = {},
+    seed_to_items = {},
+    known_items = {},  -- Tracks which items we've seen before
     prediction_model = {
-        active = {},    -- Items predicted to appear next
+        active = {},
         accuracy = 0,
-        algorithm = "basic_seed_modulo" -- Current algorithm being tested
+        algorithm = "basic_seed_modulo"
     }
 }
 
@@ -37,6 +48,7 @@ local function deepString(tbl, indent)
     return lines
 end
 
+-- Save log to file
 local function appendLog(snapshot, predictions, accuracy)
     local rounded = snapshot.timestamp - (snapshot.timestamp % 300)
     local timeStr = os.date("%Y-%m-%d %H:%M:%S", rounded)
@@ -53,6 +65,7 @@ local function appendLog(snapshot, predictions, accuracy)
         "  Current Seed: " .. tostring(snapshot.seed),
         "  Last Delta: " .. (ANALYZER.seed_deltas[#ANALYZER.seed_deltas] and tostring(ANALYZER.seed_deltas[#ANALYZER.seed_deltas]) or "N/A"),
         "  Algorithm: " .. ANALYZER.prediction_model.algorithm,
+        "  Known Items: " .. table.concat(ANALYZER.known_items, ", "),
         snapshot.forcedRestock and ("⚠️ Forced Restock: " .. os.date("%Y-%m-%d %H:%M:%S", snapshot.forcedRestock)) or "",
         ""
     }
@@ -60,7 +73,7 @@ local function appendLog(snapshot, predictions, accuracy)
     writefile(LOG_FILE, (isfile(LOG_FILE) and readfile(LOG_FILE) or "") .. table.concat(logLines, "\n"))
 end
 
--- Webhook Sender (complete implementation)
+-- Webhook Sender
 local function sendWebhook(payload)
     local function requestWrapper(req)
         if syn and syn.request then
@@ -94,7 +107,199 @@ local function sendWebhook(payload)
     end
 end
 
--- Embed Builder (complete implementation)
+-- Parse historical data from log file
+local function loadHistoricalData()
+    if not isfile(LOG_FILE) then return end
+    
+    local logContent = readfile(LOG_FILE)
+    for seed, items in logContent:gmatch("Current Seed: (%d+).-📦 Current Stocks:%s*([%w%p%s]+)🔮") do
+        local itemList = {}
+        for item in items:gmatch("([%a%s]+):") do
+            item = item:gsub("%s+$", "")  -- Trim trailing whitespace
+            itemList[item] = true
+            
+            -- Add to known items if new
+            if not table.find(ANALYZER.known_items, item) then
+                table.insert(ANALYZER.known_items, item)
+            end
+        end
+        ANALYZER.seed_to_items[tonumber(seed)] = itemList
+    end
+end
+
+-- Test different prediction algorithms
+local function testAlgorithms(seed)
+    local algorithms = {
+        basic_seed_modulo = function()
+            local predicted = {}
+            for _, item in ipairs(ALL_SEEDS) do
+                -- Skip items we've never seen before
+                if table.find(ANALYZER.known_items, item) then
+                    local modValue = #item * 7
+                    if seed % modValue < 3 then
+                        predicted[item] = 1
+                    end
+                end
+            end
+            return predicted
+        end,
+
+        bitwise_pattern = function()
+            local predicted = {}
+            for index, item in ipairs(ALL_SEEDS) do
+                -- Only predict items we've seen before
+                if table.find(ANALYZER.known_items, item) then
+                    local bitMask = bit32.lshift(1, (index - 1) % 24)
+                    if bit32.band(seed, bitMask) ~= 0 then
+                        predicted[item] = 1
+                    end
+                end
+            end
+            return predicted
+        end,
+
+        historical_match = function()
+            local predicted = {}
+            local seedStr = tostring(seed)
+            local last3 = #seedStr >= 3 and seedStr:sub(-3) or seedStr
+            
+            -- Find similar seeds based on last 3 digits
+            local similarSeeds = {}
+            for s, items in pairs(ANALYZER.seed_to_items) do
+                local sStr = tostring(s)
+                if #sStr >= 3 and sStr:sub(-3) == last3 then
+                    table.insert(similarSeeds, s)
+                end
+            end
+            
+            if #similarSeeds > 0 then
+                local freq = {}
+                for _, s in ipairs(similarSeeds) do
+                    for item in pairs(ANALYZER.seed_to_items[s]) do
+                        freq[item] = (freq[item] or 0) + 1
+                    end
+                end
+                
+                -- Include items that appear in >50% of similar seeds
+                for item, count in pairs(freq) do
+                    if count / #similarSeeds > 0.5 then
+                        predicted[item] = 1
+                    end
+                end
+            end
+            return predicted
+        end,
+
+        item_cooccurrence = function()
+            local predicted = {}
+            -- Simple co-occurrence based on most frequent items
+            for item, count in pairs(ANALYZER.item_patterns) do
+                if count > #DATA_HISTORY * 0.3 then  -- Appears in >30% of history
+                    predicted[item] = 1
+                end
+            end
+            return predicted
+        end
+    }
+
+    local bestAlgorithm, bestAccuracy = "", 0
+    for name, algo in pairs(algorithms) do
+        local tempPredicted = algo()
+        local accuracy = 0
+        
+        if ANALYZER.seed_to_items[seed] then
+            local correct = 0
+            local total = 0
+            
+            -- Check true positives
+            for item in pairs(tempPredicted) do
+                if ANALYZER.seed_to_items[seed][item] then
+                    correct = correct + 1
+                end
+                total = total + 1
+            end
+            
+            -- Check false negatives
+            for item in pairs(ANALYZER.seed_to_items[seed]) do
+                if not tempPredicted[item] then
+                    total = total + 1
+                end
+            end
+            
+            accuracy = total > 0 and (correct / total) or 0
+        end
+        
+        if accuracy > bestAccuracy then
+            bestAlgorithm = name
+            bestAccuracy = accuracy
+        end
+    end
+
+    ANALYZER.prediction_model.algorithm = bestAlgorithm ~= "" and bestAlgorithm or "basic_seed_modulo"
+    return algorithms[ANALYZER.prediction_model.algorithm]()
+end
+
+-- Analysis function
+local function analyze(snapshot)
+    if ANALYZER.last_seed then
+        table.insert(ANALYZER.seed_deltas, snapshot.seed - ANALYZER.last_seed)
+    end
+    ANALYZER.last_seed = snapshot.seed
+
+    local currentItems = {}
+    for item in pairs(snapshot.stocks) do
+        currentItems[item] = true
+        
+        -- Track item appearance patterns
+        ANALYZER.item_patterns[item] = (ANALYZER.item_patterns[item] or 0) + 1
+        
+        -- Add to known items if new
+        if not table.find(ANALYZER.known_items, item) then
+            table.insert(ANALYZER.known_items, item)
+        end
+    end
+    ANALYZER.seed_to_items[snapshot.seed] = currentItems
+end
+
+-- Prediction function
+local function predictNextStocks(seed)
+    -- First try exact historical matches
+    if ANALYZER.seed_to_items[seed] then
+        local exactMatch = {}
+        for item in pairs(ANALYZER.seed_to_items[seed]) do
+            exactMatch[item] = 1
+        end
+        ANALYZER.prediction_model.algorithm = "exact_historical_match"
+        return exactMatch
+    end
+
+    return testAlgorithms(seed)
+end
+
+-- Validation function
+local function crossValidate(actualStocks, predictedStocks)
+    local correct = 0
+    local total = 0
+    
+    -- Check true positives
+    for item in pairs(predictedStocks) do
+        if actualStocks[item] then
+            correct = correct + 1
+        end
+        total = total + 1
+    end
+    
+    -- Check false negatives
+    for item in pairs(actualStocks) do
+        if not predictedStocks[item] then
+            total = total + 1
+        end
+    end
+    
+    return total > 0 and math.floor((correct / total) * 100) or 0
+end
+
+-- Embed Builder
 local function createEmbed(snapshot, predictions, accuracy)
     local currentTime = DateTime.now()
     local cstOffset = 6 * 60 * 60
@@ -135,9 +340,12 @@ local function createEmbed(snapshot, predictions, accuracy)
     local delta = ANALYZER.seed_deltas[#ANALYZER.seed_deltas]
     table.insert(embed.fields, {
         name = "🌱 Seed Data",
-        value = string.format("Current Seed: `%s`\nLast Delta: `%s`",
+        value = string.format("Current Seed: `%s`\nLast Delta: `%s`\nAlgorithm: `%s`\nKnown Items: `%d/%d`",
             tostring(snapshot.seed),
-            delta and tostring(delta) or "N/A"),
+            delta and tostring(delta) or "N/A",
+            ANALYZER.prediction_model.algorithm,
+            #ANALYZER.known_items,
+            #ALL_SEEDS),
         inline = false
     })
 
@@ -149,155 +357,6 @@ local function createEmbed(snapshot, predictions, accuracy)
 
     return { embeds = { embed } }
 end
-
--- New: Parse historical data from log file
-local function loadHistoricalData()
-    if not isfile(LOG_FILE) then return end
-    
-    local logContent = readfile(LOG_FILE)
-    for seed, items in logContent:gmatch("Current Seed: (%d+).-📦 Current Stocks:%s*([%w%p%s]+)🔮") do
-        local itemList = {}
-        for item in items:gmatch("(%a+):") do
-            itemList[item] = true
-        end
-        ANALYZER.seed_to_items[tonumber(seed)] = itemList
-    end
-end
-
--- New: Test different prediction algorithms
-local function testAlgorithms(seed)
-    local algorithms = {
-        -- Basic seed modulo (tests if item index appears when seed % X matches)
-        basic_seed_modulo = function()
-            local predicted = {}
-            local all_items = {"Carrot", "Strawberry", "Blueberry", "Orange Tulip", "Tomato", "Corn", "Daffodil", "Watermelon", "Pumpkin", "Apple", "Bamboo", "Coconut", "Cactus", "Dragon Fruit", "Mango", "Grape", "Mushroom", "Pepper", "Cacao", "Beanstalk", "Ember Lily", "Sugar Apple", "Burning Bud", "Giant Pinecone", "Elder Strawberry"}
-            
-            for _, item in ipairs(all_items) do
-                -- Simple test: item appears if (seed % prime_number) matches pattern
-                local modValue = #item * 7 -- Arbitrary multiplier
-                if seed % modValue < 3 then -- Appears in ~3/modValue cases
-                    predicted[item] = 1
-                end
-            end
-            return predicted
-        end,
-
-        -- Bitwise pattern (checks specific bits in the seed)
-        bitwise_pattern = function()
-            local predicted = {}
-            -- Check if specific bits are set for each item
-            if seed & 0x1 ~= 0 then predicted.Carrot = 1 end
-            if seed & 0x2 ~= 0 then predicted.Bamboo = 1 end
-            -- ... add more items
-            return predicted
-        end,
-
-        -- Historical pattern matching
-        historical_match = function()
-            local predicted = {}
-            -- Look for seeds with similar last digits
-            local similarSeeds = {}
-            for s in pairs(ANALYZER.seed_to_items) do
-                if tostring(s):sub(-3) == tostring(seed):sub(-3) then
-                    similarSeeds[#similarSeeds+1] = s
-                end
-            end
-            
-            -- If we found similar seeds, use their items
-            if #similarSeeds > 0 then
-                local sample = ANALYZER.seed_to_items[similarSeeds[math.random(#similarSeeds)]]
-                for item in pairs(sample) do
-                    predicted[item] = 1
-                end
-            end
-            return predicted
-        end
-    }
-
-    -- Test each algorithm and return the best one
-    local bestAlgorithm, bestAccuracy = "", 0
-    for name, algo in pairs(algorithms) do
-        local tempPredicted = algo()
-        local accuracy = 0
-        
-        -- Compare with historical data if available
-        if ANALYZER.seed_to_items[seed] then
-            local correct = 0
-            for item in pairs(tempPredicted) do
-                if ANALYZER.seed_to_items[seed][item] then
-                    correct = correct + 1
-                end
-            end
-            accuracy = correct / math.max(1, table.size(tempPredicted))
-        end
-        
-        if accuracy > bestAccuracy then
-            bestAlgorithm = name
-            bestAccuracy = accuracy
-        end
-    end
-
-    return algorithms[bestAlgorithm or ANALYZER.prediction_model.algorithm]()
-end
-
--- Updated analysis function
-local function analyze(snapshot)
-    if ANALYZER.last_seed then
-        table.insert(ANALYZER.seed_deltas, snapshot.seed - ANALYZER.last_seed)
-    end
-    ANALYZER.last_seed = snapshot.seed
-
-    -- Record which items appeared with this seed
-    local currentItems = {}
-    for item in pairs(snapshot.stocks) do
-        currentItems[item] = true
-        -- Update appearance frequency
-        ANALYZER.item_patterns[item] = (ANALYZER.item_patterns[item] or 0) + 1
-    end
-    ANALYZER.seed_to_items[snapshot.seed] = currentItems
-end
-
--- Updated prediction function
-local function predictNextStocks(seed)
-    -- First try exact seed matches from history
-    if ANALYZER.seed_to_items[seed] then
-        local exactMatch = {}
-        for item in pairs(ANALYZER.seed_to_items[seed]) do
-            exactMatch[item] = 1
-        end
-        ANALYZER.prediction_model.algorithm = "exact_historical_match"
-        return exactMatch
-    end
-
-    -- Otherwise test algorithms
-    return testAlgorithms(seed)
-end
-
--- Updated validation function (only checks presence/absence)
-local function crossValidate(actualStocks, predictedStocks)
-    local correct = 0
-    local total = 0
-    
-    -- Check true positives (predicted and appeared)
-    for item in pairs(predictedStocks) do
-        if actualStocks[item] then
-            correct = correct + 1
-        end
-        total = total + 1
-    end
-    
-    -- Check false negatives (appeared but not predicted)
-    for item in pairs(actualStocks) do
-        if not predictedStocks[item] then
-            total = total + 1
-        end
-    end
-    
-    return total > 0 and math.floor((correct / total) * 100) or 0
-end
-
--- Embed Builder (unchanged)
-local function createEmbed(snapshot, predictions, accuracy) ... end
 
 -- Load historical data on startup
 loadHistoricalData()
